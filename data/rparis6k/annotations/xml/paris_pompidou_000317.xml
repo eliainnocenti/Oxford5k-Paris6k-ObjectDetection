@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<annotation>
+  <folder>rparis6k</folder>
+  <filename>paris_pompidou_000317.jpg</filename>
+  <source>
+    <database>Paris 6k</database>
+  </source>
+  <size>
+    <width>768</width>
+    <height>1024</height>
+    <depth>3</depth>
+  </size>
+  <segmented>0</segmented>
+</annotation>
