@@ -1,5 +1,5 @@
 """
-TODO: add description
+TODO: add file and function descriptions
 mention:
 - the revisitop license
 - the directory structure that will be created

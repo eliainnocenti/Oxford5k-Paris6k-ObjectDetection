@@ -1,5 +1,5 @@
 """
-TODO: add description
+TODO: add file and function descriptions
 """
 
 import pickle
@@ -158,13 +158,14 @@ def create_xml(folder_name, image_name, width, height, objects, output_folder):
         f.write(xml_pretty)
 
 
-def create_json(categories, images, annotations, output_folder):
+def create_json(categories, images, annotations, output_folder, name="labels"):
     """
 
     :param categories:
     :param images:
     :param annotations:
     :param output_folder:
+    :param name:
     :return:
     """
     data = {
@@ -173,7 +174,7 @@ def create_json(categories, images, annotations, output_folder):
         "annotations": annotations
     }
 
-    with open(os.path.join(output_folder, "labels.json"), "w") as f:
+    with open(os.path.join(output_folder, f"{name}.json"), "w") as f:
         json.dump(data, f, indent=4) # TODO: check if the format is correct
 
 

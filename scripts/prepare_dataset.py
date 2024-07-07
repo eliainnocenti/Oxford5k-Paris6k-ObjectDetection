@@ -1,12 +1,14 @@
 """
-TODO: add description
+TODO: add file and function descriptions
 """
 
 import os
 import random
 import pickle
+import json
 
 from scripts.create_annotations import main as create_annotations
+from scripts.create_annotations import create_json
 
 base_path = "../../../Data/"
 
@@ -126,7 +128,90 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
     :param val_percent:
     :return:
     """
-    # TODO: implement
+    annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
+    annotations = [file for file in os.listdir(annotations_dir) if file.endswith('.xml')]
+    images = [os.path.splitext(file)[0] for file in annotations]
+
+    train_size = int(len(images) * train_percent)
+    val_size = int(len(images) * val_percent)
+    test_size = len(images) - train_size - val_size
+
+    for i in range(random.randint(1, 10)):
+        random.shuffle(images)
+
+    train_set = images[:train_size]
+    val_set = images[train_size:train_size + val_size]
+    test_set = images[train_size + val_size:]
+
+    with open(os.path.join('../data', dataset_name, 'sets', 'train.txt'), 'w') as file:
+        for image in train_set:
+            file.write(f'{image}.jpg\n')
+
+    with open(os.path.join('../data', dataset_name, 'sets', 'val.txt'), 'w') as file:
+        for image in val_set:
+            file.write(f'{image}.jpg\n')
+
+    with open(os.path.join('../data', dataset_name, 'sets', 'test.txt'), 'w') as file:
+        for image in test_set:
+            file.write(f'{image}.jpg\n')
+
+
+def split_annotations(dataset_name, type='json'):
+    """
+
+    :param dataset_name:
+    :param type:
+    :return:
+    """
+    train_set = []
+    val_set = []
+    test_set = []
+
+    sets_dir = os.path.join('../data', dataset_name, 'sets')
+
+    with open(os.path.join(sets_dir, 'train.txt'), 'r') as file:
+        for line in file:
+            train_set.append(line.strip())
+
+    with open(os.path.join(sets_dir, 'val.txt'), 'r') as file:
+        for line in file:
+            val_set.append(line.strip())
+
+    with open(os.path.join(sets_dir, 'test.txt'), 'r') as file:
+        for line in file:
+            test_set.append(line.strip())
+
+    if type == 'json':
+        annotations_dir = os.path.join('../data', dataset_name, 'annotations/json')
+        labels_file = os.path.join(annotations_dir, 'labels.json')
+        if not os.path.exists(labels_file):
+            print(f"Error: Labels file not found: {labels_file}")
+            return
+        with open(labels_file, 'r') as file:
+            labels_json = json.load(file)
+        categories = labels_json['categories']
+        images = labels_json['images']
+        annotations = labels_json['annotations']
+
+        train_images = [image for image in images if image['file_name'] in train_set]
+        val_images = [image for image in images if image['file_name'] in val_set]
+        test_images = [image for image in images if image['file_name'] in test_set]
+
+        #print(f"Number of train images: {len(train_images)}")
+        #print(f"Number of val images: {len(val_images)}")
+        #print(f"Number of test images: {len(test_images)}")
+
+        train_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in train_images]]
+        val_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in val_images]]
+        test_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in test_images]]
+
+        create_json(categories, train_images, train_annotations, sets_dir, name='train')
+        create_json(categories, val_images, val_annotations, sets_dir, name='val')
+        create_json(categories, test_images, test_annotations, sets_dir, name='test')
+
+    else:
+        print("Error: Invalid type of annotation")
+        return
 
 
 def prepare_dataset(dataset_name, type='xml', levels=3):
@@ -157,11 +242,14 @@ def prepare_dataset(dataset_name, type='xml', levels=3):
         else:
             print("Exiting...")
             return
+    else:
+        print(f"Annotations found for {dataset_name}")
 
     print(f"Do you want to split the dataset {dataset_name} into train, validation and test sets? (y/n)")
     split = input()
     if split == 'y':
-        split_train_val_test(dataset_name)
+        #split_train_val_test(dataset_name)
+        split_annotations(dataset_name, type=type)
     else:
         print("Exiting...")
         return
@@ -181,7 +269,7 @@ def main():
     ]
 
     for dataset in datasets:
-        prepare_dataset(dataset, levels=2)
+        prepare_dataset(dataset, type='json', levels=2)
 
 
 if __name__ == "__main__":
