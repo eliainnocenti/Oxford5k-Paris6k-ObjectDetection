@@ -8,10 +8,6 @@ from xml.dom import minidom
 import os
 from PIL import Image
 
-# TODO: check -> assuming that an image can appear only once related to a specific query image, it may be possible to use a single bounding box per object
-# TODO: check if i need to use the add_box method
-# FIXME: update all the paths
-
 class BoundingBox:
     def __init__(self, xmin, ymin, xmax, ymax):
         self.xmin = xmin
@@ -21,34 +17,47 @@ class BoundingBox:
 
 
 class Object:
-    def __init__(self, name, pose, truncated, difficult, bounding_boxes=None):
+    def __init__(self, name, pose, truncated, difficult, bounding_box=None):
         self.name = name
         self.pose = pose
         self.truncated = truncated
         self.difficult = difficult
-        self.bounding_boxes = bounding_boxes if bounding_boxes is not None else []
-
-    def add_bbox(self, bbox):
-        self.bounding_boxes.append(bbox)
+        self.bounding_box = bounding_box
 
 
 def map_query_to_monument(query_images, monuments):
+    """
+
+    :param query_images:
+    :param monuments:
+    :return:
+    """
     query_to_monument = {}
     for monument in monuments:
         query_to_monument[monument] = []
-        for idx, query_image in query_images.items():     # Iterate over items of the dictionary
-            if monument in query_image:                   # Check if monument is a substring of the query image
-                query_to_monument[monument].append(idx)   # Append the index of the query image to the list
+        for idx, query_image in query_images.items():    # Iterate over items of the dictionary
+            if monument in query_image:                  # Check if monument is a substring of the query image
+                query_to_monument[monument].append(idx)  # Append the index of the query image to the list
     return query_to_monument
 
 
 def load_pickle(file_path):
+    """
+
+    :param file_path:
+    :return:
+    """
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
 
 
 def check_pickle_structure(data):
+    """
+
+    :param data:
+    :return:
+    """
     # Check if the structure of the pkl file is the expected one
     if 'gnd' in data and 'imlist' in data and 'qimlist' in data:
         return True
@@ -60,6 +69,13 @@ def get_dataset_size(image_folder):
 
 
 def check_substring(full_string, prefix, target_substring):
+    """
+
+    :param full_string:
+    :param prefix:
+    :param target_substring:
+    :return:
+    """
     if full_string.startswith(prefix):
         substring_after_prefix = full_string[len(prefix):]
         return substring_after_prefix.startswith(target_substring)
@@ -67,6 +83,16 @@ def check_substring(full_string, prefix, target_substring):
 
 
 def create_xml(folder_name, image_name, width, height, objects, output_folder):
+    """
+
+    :param folder_name:
+    :param image_name:
+    :param width:
+    :param height:
+    :param objects:
+    :param output_folder:
+    :return:
+    """
     root = ET.Element("annotation")
 
     ET.SubElement(root, "folder").text = folder_name
@@ -84,7 +110,7 @@ def create_xml(folder_name, image_name, width, height, objects, output_folder):
     size = ET.SubElement(root, "size")
     ET.SubElement(size, "width").text = str(width)
     ET.SubElement(size, "height").text = str(height)
-    ET.SubElement(size, "depth").text = "3" # Assuming all images are RGB
+    ET.SubElement(size, "depth").text = "3"  # Assuming all images are RGB
 
     ET.SubElement(root, "segmented").text = "0"
 
@@ -94,12 +120,12 @@ def create_xml(folder_name, image_name, width, height, objects, output_folder):
         ET.SubElement(obj, "pose").text = object.pose
         ET.SubElement(obj, "truncated").text = object.truncated
         ET.SubElement(obj, "difficult").text = object.difficult
-        for bbox in object.bounding_boxes:
-            bndbox = ET.SubElement(obj, "bndbox")
-            ET.SubElement(bndbox, "xmin").text = str(bbox.xmin)
-            ET.SubElement(bndbox, "ymin").text = str(bbox.ymin)
-            ET.SubElement(bndbox, "xmax").text = str(bbox.xmax)
-            ET.SubElement(bndbox, "ymax").text = str(bbox.ymax)
+        bbox = object.bounding_box
+        bndbox = ET.SubElement(obj, "bndbox")
+        ET.SubElement(bndbox, "xmin").text = str(bbox.xmin)
+        ET.SubElement(bndbox, "ymin").text = str(bbox.ymin)
+        ET.SubElement(bndbox, "xmax").text = str(bbox.xmax)
+        ET.SubElement(bndbox, "ymax").text = str(bbox.ymax)
 
     xml_string = ET.tostring(root)
     xml_pretty = minidom.parseString(xml_string).toprettyxml(indent="  ")
@@ -109,7 +135,13 @@ def create_xml(folder_name, image_name, width, height, objects, output_folder):
         f.write(xml_pretty)
 
 
-def create_classes_list(data, folder_name): # FIXME: update function
+def create_classes_list(data, folder_name):  # FIXME: update function
+    """
+
+    :param data:
+    :param folder_name:
+    :return:
+    """
     # TODO: check if the file already exists
     classes = {}
     for idx, query_image in enumerate(data['qimlist']):
@@ -124,6 +156,12 @@ def create_classes_list(data, folder_name): # FIXME: update function
 
 
 def find_monument_by_query_number(query_number, monuments_dict):
+    """
+
+    :param query_number:
+    :param monuments_dict:
+    :return:
+    """
     for monument, queries in monuments_dict.items():
         if query_number in queries:
             return monument
@@ -131,7 +169,17 @@ def find_monument_by_query_number(query_number, monuments_dict):
 
 
 def process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=3):
+    """
 
+    :param folder_name:
+    :param data:
+    :param image_folder:
+    :param output_folder:
+    :param monuments_list:
+    :param type:
+    :param levels:
+    :return:
+    """
     if type == "xml":
 
         if not check_pickle_structure(data):
@@ -163,10 +211,11 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
 
         monuments_dict = map_query_to_monument(query_images, monuments_list)
 
+        # query images
         for idx, query_image in enumerate(qimlist):
             image_name = query_image + ".jpg"
             image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path): # TODO: check
+            if not os.path.exists(image_path):  # TODO: check
                 print(f"Warning: Image {image_path} not found. Skipping.")
                 continue
             with Image.open(image_path) as img:
@@ -174,49 +223,82 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
             _bbox = gnd[idx]['bbx']
             bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
             monument = find_monument_by_query_number(idx, monuments_dict)
-            objects = [Object(f"{monument}", "Unspecified", "0", "0", [bbox])] # TODO: check attributes
+            objects = [Object(f"{monument}", "Unspecified", "0", "0", bbox)]  # TODO: check attributes
             create_xml(folder_name, image_name, width, height, objects, output_folder)
 
+        # database images
         for idx, image in enumerate(imlist):
             image_name = image + ".jpg"
             image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path): # TODO: check
+            if not os.path.exists(image_path):  # TODO: check
                 print(f"Warning: Image {image_path} not found. Skipping.")
                 continue
             with Image.open(image_path) as img:
                 width, height = img.size
-            presences = [] # TODO: update name
+            # find all the bboxes related to the image
+            presences = []  # TODO: update name
             for query_idx in range(len(qimlist)):
                 for level in levels:
                     if idx in gnd[query_idx][level]:
                         presences.append((query_idx, level))
             objects = []
+            _objects = {}
             for presence in presences:
                 query_idx, level = presence
                 _bbox = gnd[query_idx]['bbx']
                 bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
-                if level == "easy": level = 0
-                elif level == "hard": level = 1
-                elif level == "junk": level = 2
-                else: level = 0
-                # FIXME: check if there is the same object and use the method add_bbox
+                if level == "easy":
+                    level = 0
+                elif level == "hard":
+                    level = 1
+                elif level == "junk":
+                    level = 2
+                else:
+                    level = 0
                 monument = find_monument_by_query_number(query_idx, monuments_dict)
-                objects.append(Object(f"{monument}", "Unspecified", "0", str(level), [bbox])) # TODO: check attributes
+                if monument not in _objects:
+                    _objects[monument] = []
+                _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
+            # merge bbox for the same monument
+            for monument in _objects.keys():
+                xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
+                difficulty = 0
+                for obj in _objects[monument]:
+                    if obj.difficult == "1":
+                        difficulty = 1
+                    xmin_avg += obj.bounding_box.xmin
+                    ymin_avg += obj.bounding_box.ymin
+                    xmax_avg += obj.bounding_box.xmax
+                    ymax_avg += obj.bounding_box.ymax
+                xmin_avg = round(xmin_avg / len(_objects[monument]), 1)
+                ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
+                xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
+                ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
+                bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
+                objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
             create_xml(folder_name, image_name, width, height, objects, output_folder)
 
-        create_classes_list(data, folder_name) # FIXME: do i need the file classes.txt?
+        #create_classes_list(data, folder_name)  # FIXME: do i need the file classes.txt?
 
         print(f"XML annotations created in: {output_folder}")
-        print(f"Dataset size: {get_dataset_size(image_folder)}")         # number of images in the dataset
+        print(f"Dataset size: {get_dataset_size(image_folder)}")  # number of images in the dataset
         print(f"Annotations created: {len(os.listdir(output_folder))}")  # number of annotations created
 
-    # TODO: add support for other types of annotations (csv, json)
+    elif type == "json":
+        print("JSON annotations not supported yet")
+        # TODO: implement json annotations
 
     print("Annotations created successfully")
 
 
-def main(datasets=None, type='xml',levels=3):
+def main(datasets=None, type='xml', levels=3):
+    """
 
+    :param datasets:
+    :param type:
+    :param levels:
+    :return:
+    """
     base_path = "../../../Data/"
 
     if datasets is None:
@@ -230,7 +312,7 @@ def main(datasets=None, type='xml',levels=3):
         pickle_file = os.path.join(base_path, "datasets/roxford5k/gnd_roxford5k.pkl")
         image_folder = os.path.join(base_path, "datasets/roxford5k/images")
         output_folder = "../data/roxford5k/annotations/xml"
-        monuments_roxford5k = [] # TODO: add monuments
+        monuments_roxford5k = []  # TODO: add monuments
 
         data = load_pickle(pickle_file)
         process_data("roxford5k", data, image_folder, output_folder, monuments_roxford5k, type, levels)

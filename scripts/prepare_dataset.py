@@ -8,18 +8,30 @@ import pickle
 
 from scripts.create_annotations import main as create_annotations
 
-
 base_path = "../../../Data/"
 
-# FIXME: check the usage of the classes.txt file
-
 def load_pickle(file_path):
+    """
+
+    :param file_path:
+    :return:
+    """
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
 
-
 def generate_txt_files(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1, levels=3):
+    """
+
+    :param dataset_name:
+    :param train_percent:
+    :param val_percent:
+    :param test_percent:
+    :param levels:
+    :return:
+    """
+    # FIXME: update function
+    # FIXME: check the usage of the classes.txt file
     percent = train_percent + val_percent + test_percent
     if abs(1 - percent) > 0.000001:
         print("Error: Train, validation and test percentages must sum up to 1")
@@ -103,38 +115,68 @@ def generate_txt_files(dataset_name, train_percent=0.7, val_percent=0.2, test_pe
             #image_idx = data['imlist'].index(image) # TODO: do i need this?
             file.write(f'{image}\n')
 
+def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
+    """
+
+    :param dataset_name:
+    :param train_percent:
+    :param val_percent:
+    :return:
+    """
+    # TODO: implement
 
 def prepare_dataset(dataset_name, type='xml', levels=3):
+    """
+
+    :param dataset_name:
+    :param type:
+    :param levels:
+    :return:
+    """
     # Check if annotations dir are already created
     if type == 'xml':
         annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
-    elif type == 'csv':
-        annotations_dir = os.path.join('../data', dataset_name, 'annotations/csv') # TODO: check
+    elif type == 'json':
+        annotations_dir = os.path.join('../data', dataset_name, 'annotations/json')
     else:
         print("Error: Invalid type of annotation")
         return
-    if not os.path.exists(annotations_dir):
+
+    if not os.path.exists(annotations_dir) or \
+            (os.path.exists(annotations_dir) and type == 'xml' and len(os.listdir(annotations_dir)) == 0) or \
+            (os.path.exists(annotations_dir) and type == 'json' and not any(
+                file.endswith('.json') for file in os.listdir(annotations_dir))):
         print(f"Annotations not found for {dataset_name}. Do you want to create them? (y/n)")
         create = input()
         if create == 'y':
-            create_annotations(dataset_name, levels=levels)
+            create_annotations(dataset_name, type, levels=levels)
         else:
             print("Exiting...")
             return
 
-    # Create txt files
-    generate_txt_files(dataset_name, levels=levels)
+    print(f"Do you want to split the dataset {dataset_name} into train, validation and test sets? (y/n)")
+    split = input()
+    if split == 'y':
+        split_train_val_test(dataset_name)
+    else:
+        print("Exiting...")
+        return
 
+    # Create txt files
+    #generate_txt_files(dataset_name, levels=levels) # FIXME
 
 def main():
+    """
+
+    :return:
+    """
     datasets = [
         #'roxford5k',
         'rparis6k'
     ]
 
     for dataset in datasets:
-        prepare_dataset(dataset)
-
+        prepare_dataset(dataset, levels=2)
 
 if __name__ == "__main__":
     main()

@@ -17,58 +17,10 @@
     <truncated>0</truncated>
     <difficult>0</difficult>
     <bndbox>
-      <xmin>147</xmin>
-      <ymin>214</ymin>
-      <xmax>579</xmax>
-      <ymax>674</ymax>
-    </bndbox>
-  </object>
-  <object>
-    <name>sacrecoeur</name>
-    <pose>Unspecified</pose>
-    <truncated>0</truncated>
-    <difficult>0</difficult>
-    <bndbox>
-      <xmin>201</xmin>
-      <ymin>89</ymin>
-      <xmax>908</xmax>
-      <ymax>735</ymax>
-    </bndbox>
-  </object>
-  <object>
-    <name>sacrecoeur</name>
-    <pose>Unspecified</pose>
-    <truncated>0</truncated>
-    <difficult>0</difficult>
-    <bndbox>
-      <xmin>26</xmin>
-      <ymin>104</ymin>
-      <xmax>724</xmax>
-      <ymax>910</ymax>
-    </bndbox>
-  </object>
-  <object>
-    <name>sacrecoeur</name>
-    <pose>Unspecified</pose>
-    <truncated>0</truncated>
-    <difficult>0</difficult>
-    <bndbox>
-      <xmin>4</xmin>
-      <ymin>80</ymin>
-      <xmax>765</xmax>
-      <ymax>931</ymax>
-    </bndbox>
-  </object>
-  <object>
-    <name>sacrecoeur</name>
-    <pose>Unspecified</pose>
-    <truncated>0</truncated>
-    <difficult>0</difficult>
-    <bndbox>
-      <xmin>367</xmin>
-      <ymin>137</ymin>
-      <xmax>727</xmax>
-      <ymax>511</ymax>
+      <xmin>149.0</xmin>
+      <ymin>124.8</ymin>
+      <xmax>740.6</xmax>
+      <ymax>752.2</ymax>
     </bndbox>
   </object>
 </annotation>
