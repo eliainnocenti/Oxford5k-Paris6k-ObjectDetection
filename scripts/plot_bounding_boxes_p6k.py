@@ -11,6 +11,7 @@ import xml.etree.ElementTree as ET
 
 base_path = "../../../Data/"
 
+
 def plot_bounding_box_annotation(image_path, annotation_xml):
     """
 
@@ -57,6 +58,7 @@ def plot_bounding_box_annotation(image_path, annotation_xml):
     ax.axis('off')
     plt.show()
 
+
 def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
     """
 
@@ -82,6 +84,7 @@ def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
 
     plt.show()
 
+
 def test_query(query=0):
     """
 
@@ -99,6 +102,7 @@ def test_query(query=0):
         else:
             print(f"Image file not found: {image_path}")
 
+
 def test_image(dataset_name, image_name):
     """
 
@@ -115,6 +119,7 @@ def test_image(dataset_name, image_name):
             print(f"Annotation file not found: {annotation_xml}")
     else:
         print(f"Image file not found: {image_path}")
+
 
 def test_monument(dataset_name, monument_name, size_test):
     """
@@ -143,6 +148,7 @@ def test_monument(dataset_name, monument_name, size_test):
     for i in range(size_test):
         plot_bounding_box_annotation(images[i], xmls[i])
 
+
 def main():
     """
 
@@ -155,6 +161,7 @@ def main():
     #test_image('rparis6k', image_name)
 
     test_monument('rparis6k', 'defense', 10)
+
 
 if __name__ == "__main__":
     main()

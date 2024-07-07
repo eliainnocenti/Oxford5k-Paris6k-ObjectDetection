@@ -10,6 +10,7 @@ from scripts.create_annotations import main as create_annotations
 
 base_path = "../../../Data/"
 
+
 def load_pickle(file_path):
     """
 
@@ -19,6 +20,7 @@ def load_pickle(file_path):
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
+
 
 def generate_txt_files(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1, levels=3):
     """
@@ -115,6 +117,7 @@ def generate_txt_files(dataset_name, train_percent=0.7, val_percent=0.2, test_pe
             #image_idx = data['imlist'].index(image) # TODO: do i need this?
             file.write(f'{image}\n')
 
+
 def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
     """
 
@@ -124,6 +127,7 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
     :return:
     """
     # TODO: implement
+
 
 def prepare_dataset(dataset_name, type='xml', levels=3):
     """
@@ -165,6 +169,7 @@ def prepare_dataset(dataset_name, type='xml', levels=3):
     # Create txt files
     #generate_txt_files(dataset_name, levels=levels) # FIXME
 
+
 def main():
     """
 
@@ -177,6 +182,7 @@ def main():
 
     for dataset in datasets:
         prepare_dataset(dataset, levels=2)
+
 
 if __name__ == "__main__":
     main()

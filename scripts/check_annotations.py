@@ -8,6 +8,7 @@ import xml.etree.ElementTree as ET
 
 base_path = "../../../Data/"
 
+
 def load_pickle(file_path):
     """
 
@@ -17,6 +18,7 @@ def load_pickle(file_path):
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
+
 
 def list_objects_in_annotations(annotation_xml):
     """
@@ -39,7 +41,14 @@ def list_objects_in_annotations(annotation_xml):
 
     return objects
 
+
 def check_annotations(data_dir, xml_dir):
+    """
+
+    :param data_dir:
+    :param xml_dir:
+    :return:
+    """
     # iterate over all images (that have annotations) and check if they have objects (monuments) in the annotation file that have a different name than the image file
     images_with_no_objects = []
     images_with_objects_with_different_name = []
@@ -82,21 +91,42 @@ def check_annotations(data_dir, xml_dir):
 
     return images_with_no_objects, images_with_objects_with_different_name
 
+
 def find_imlist_idx(data, imname):
+    """
+
+    :param data:
+    :param imname:
+    :return:
+    """
     imlist = data['imlist']
     for i, im in enumerate(imlist):
         if im == imname:
             return i
     return -1
 
+
 def find_qimlist_idx(data, qimname):
+    """
+
+    :param data:
+    :param qimname:
+    :return:
+    """
     qimlist = data['qimlist']
     for i, qim in enumerate(qimlist):
         if qim == qimname:
             return i
     return -1
 
+
 def find_presence_in_gnd(data, imname):
+    """
+
+    :param data:
+    :param imname:
+    :return:
+    """
     imlist_idx = find_imlist_idx(data, imname)
     gnd = data['gnd']
     presence = {}
@@ -109,6 +139,7 @@ def find_presence_in_gnd(data, imname):
                     presence[query_idx][level] = []
                     presence[query_idx][level].append(im)
     return presence
+
 
 def main():
     """
@@ -174,6 +205,7 @@ def main():
     presence = find_presence_in_gnd(data, imname)
     print(f"Presence: {presence}")
     '''
+
 
 if __name__ == '__main__':
     main()
