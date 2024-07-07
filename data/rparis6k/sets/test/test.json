@@ -1,6 +1,10 @@
 {
     "categories": [
         {
+            "id": 0,
+            "name": "background"
+        },
+        {
             "id": 1,
             "name": "defense"
         },

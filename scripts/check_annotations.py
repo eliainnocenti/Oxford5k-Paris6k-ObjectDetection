@@ -1,5 +1,39 @@
 """
-TODO: add file and function descriptions
+This script checks the consistency of image annotations for datasets such as rparis6k, ensuring that
+each image has corresponding objects correctly annotated.
+
+Functions:
+----------
+1. load_pickle(file_path):
+    Loads data from a pickle file.
+
+2. list_objects_in_annotations(annotation_xml):
+    Lists all objects in an XML annotation file.
+
+3. check_annotations(data_dir, xml_dir):
+    Checks annotations for consistency, identifying images with no objects or objects with different names.
+
+4. find_imlist_idx(data, imname):
+    Finds the index of an image in the 'imlist'.
+
+5. find_qimlist_idx(data, qimname):
+    Finds the index of a query image in the 'qimlist'.
+
+6. find_presence_in_gnd(data, imname):
+    Finds the presence of an image in the ground truth data.
+
+7. main():
+    Main function to check annotations and identify inconsistencies.
+
+Dependencies:
+-------------
+- os
+- pickle
+- xml.etree.ElementTree
+
+Usage:
+------
+To run this script, ensure that the required libraries are installed and the data directory is correctly set.
 """
 
 import os
@@ -11,9 +45,10 @@ base_path = "../../../Data/"
 
 def load_pickle(file_path):
     """
+    Loads data from a pickle file.
 
-    :param file_path:
-    :return:
+    :param file_path: Path to the pickle file.
+    :return: Loaded data.
     """
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
@@ -22,9 +57,10 @@ def load_pickle(file_path):
 
 def list_objects_in_annotations(annotation_xml):
     """
+    Lists all objects in an XML annotation file.
 
-    :param annotation_xml:
-    :return:
+    :param annotation_xml: Path to the XML annotation file.
+    :return: List of object names in the annotation.
     """
     # Load the XML annotation
     tree = ET.parse(annotation_xml)
@@ -44,10 +80,11 @@ def list_objects_in_annotations(annotation_xml):
 
 def check_annotations(data_dir, xml_dir):
     """
+    Checks annotations for consistency, identifying images with no objects or objects with different names.
 
-    :param data_dir:
-    :param xml_dir:
-    :return:
+    :param data_dir: Directory containing image files.
+    :param xml_dir: Directory containing XML annotation files.
+    :return: Tuple of lists (images_with_no_objects, images_with_objects_with_different_name).
     """
     # iterate over all images (that have annotations) and check if they have objects (monuments) in the annotation file that have a different name than the image file
     images_with_no_objects = []
@@ -94,10 +131,11 @@ def check_annotations(data_dir, xml_dir):
 
 def find_imlist_idx(data, imname):
     """
+    Finds the index of an image in the 'imlist'.
 
-    :param data:
-    :param imname:
-    :return:
+    :param data: Data loaded from the pickle file.
+    :param imname: Image name to find in the 'imlist'.
+    :return: Index of the image in the 'imlist', or -1 if not found.
     """
     imlist = data['imlist']
     for i, im in enumerate(imlist):
@@ -108,10 +146,11 @@ def find_imlist_idx(data, imname):
 
 def find_qimlist_idx(data, qimname):
     """
+    Finds the index of a query image in the 'qimlist'.
 
-    :param data:
-    :param qimname:
-    :return:
+    :param data: Data loaded from the pickle file.
+    :param qimname: Query image name to find in the 'qimlist'.
+    :return: Index of the query image in the 'qimlist', or -1 if not found.
     """
     qimlist = data['qimlist']
     for i, qim in enumerate(qimlist):
@@ -122,10 +161,11 @@ def find_qimlist_idx(data, qimname):
 
 def find_presence_in_gnd(data, imname):
     """
+    Finds the presence of an image in the ground truth data.
 
-    :param data:
-    :param imname:
-    :return:
+    :param data: Data loaded from the pickle file.
+    :param imname: Image name to check in the ground truth data.
+    :return: Dictionary of presence information.
     """
     imlist_idx = find_imlist_idx(data, imname)
     gnd = data['gnd']
@@ -143,8 +183,9 @@ def find_presence_in_gnd(data, imname):
 
 def main():
     """
+    Main function to check annotations and identify inconsistencies.
 
-    :return:
+    :return: None
     """
     data_dir = os.path.join(base_path, 'datasets', 'rparis6k', 'images')
     xml_dir = os.path.join('../data', 'rparis6k', 'annotations', 'xml')

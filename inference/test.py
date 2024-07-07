@@ -1,8 +1,8 @@
 """
-
+TODO: add file and function descriptions
 """
-import os.path
 
+import os.path
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -20,6 +20,11 @@ output_details = interpreter.get_output_details()
 
 
 def load_image_into_numpy_array(path):
+    """
+
+    :param path:
+    :return:
+    """
     image = tf.io.read_file(path)
     image = tf.image.decode_jpeg(image, channels=3)
     input_shape = input_details[0]['shape']
@@ -29,6 +34,11 @@ def load_image_into_numpy_array(path):
 
 
 def run_inference(image_np):
+    """
+
+    :param image_np:
+    :return:
+    """
     interpreter.set_tensor(input_details[0]['index'], image_np)
     interpreter.invoke()
 
@@ -40,6 +50,14 @@ def run_inference(image_np):
 
 
 def visualize_detections(image_path, boxes, classes_scores, threshold=0.5):
+    """
+
+    :param image_path:
+    :param boxes:
+    :param classes_scores:
+    :param threshold:
+    :return:
+    """
     image = plt.imread(image_path)
     fig, ax = plt.subplots(1)
     ax.imshow(image)
@@ -59,6 +77,10 @@ def visualize_detections(image_path, boxes, classes_scores, threshold=0.5):
 
 
 def main():
+    """
+
+    :return:
+    """
 
     test_path = '../data/rparis6k/sets/test.txt'
 

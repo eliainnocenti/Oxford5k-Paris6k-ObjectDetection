@@ -1,9 +1,51 @@
 """
-TODO: add file and function descriptions
+This script provides functions to visualize bounding box annotations on images for the Revisited Paris (rparis6k) dataset.
+
+License:
+---------
+# TODO: check the license
+This script uses image and annotation data from the Revisited Paris (rparis6k) dataset, which is provided under its respective license.
+For more information on the dataset's license, please refer to the official dataset documentation.
+
+Functions:
+----------
+1. plot_bounding_box_annotation(image_path, annotation_xml):
+    Plots an image with its bounding box annotations overlaid.
+
+2. plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
+    Plots an image with a single bounding box specified by the coordinates.
+
+3. test_query(query=0):
+    Tests the plotting of a bounding box annotation for a specific query image.
+
+4. test_image(dataset_name, image_name):
+    Tests the plotting of a bounding box annotation for a specified image in a specified dataset.
+
+5. test_monument(dataset_name, monument_name, size_test):
+    Tests the plotting of bounding box annotations for multiple images of a specified monument in a specified dataset.
+
+Directory Structure:
+---------------------
+<root_data_directory>/
+    datasets/
+        rparis6k/
+            images/
+        annotations/
+            xml/
+
+Dependencies:
+-------------
+- os
+- matplotlib
+- PIL (Python Imaging Library)
+- xml.etree.ElementTree
+
+Usage:
+------
+To run this script, ensure that the required libraries are installed and the data directory is correctly set.
 """
 
 import os
-import random
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
@@ -14,11 +56,13 @@ base_path = "../../../Data/"
 
 def plot_bounding_box_annotation(image_path, annotation_xml):
     """
+    Plots an image with bounding box annotations overlaid.
 
-    :param image_path:
-    :param annotation_xml:
-    :return:
+    :param image_path: Path to the image file.
+    :param annotation_xml: Path to the XML annotation file.
+    :return: None
     """
+    # FIXME: handle the case where the annotation file is json
     # Load the image
     image = Image.open(image_path)
 
@@ -61,13 +105,14 @@ def plot_bounding_box_annotation(image_path, annotation_xml):
 
 def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
     """
+    Plots an image with a single bounding box.
 
-    :param image_path:
-    :param xmin:
-    :param ymin:
-    :param xmax:
-    :param ymax:
-    :return:
+    :param image_path: Path to the image file.
+    :param xmin: Minimum x-coordinate of the bounding box.
+    :param ymin: Minimum y-coordinate of the bounding box.
+    :param xmax: Maximum x-coordinate of the bounding box.
+    :param ymax: Maximum y-coordinate of the bounding box.
+    :return: None
     """
     # Load the image
     image = Image.open(image_path)
@@ -87,10 +132,12 @@ def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
 
 def test_query(query=0):
     """
+    Tests the plotting of a bounding box annotation for a specific query image.
 
-    :param query:
-    :return:
+    :param query: Query number to test (default is 0).
+    :return: None
     """
+    # FIXME: with this implementations xml annotations are needed
     if query == 0:
         image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', 'paris_defense_000605.jpg')
         annotation_xml = '../data/rparis6k/annotations/xml/paris_defense_000605.xml'
@@ -105,11 +152,13 @@ def test_query(query=0):
 
 def test_image(dataset_name, image_name):
     """
+    Tests the plotting of a bounding box annotation for a specified image in a specified dataset.
 
-    :param dataset_name:
-    :param image_name:
-    :return:
+    :param dataset_name: Name of the dataset (e.g., 'rparis6k').
+    :param image_name: Name of the image file (without extension).
+    :return: None
     """
+    # FIXME: with this implementations xml annotations are needed
     image_path = os.path.join(base_path, 'datasets', dataset_name, 'images', image_name + '.jpg')
     annotation_xml = os.path.join('../data/', dataset_name, 'annotations/xml', image_name + '.xml')
     if os.path.exists(image_path):
@@ -123,12 +172,14 @@ def test_image(dataset_name, image_name):
 
 def test_monument(dataset_name, monument_name, size_test):
     """
+    Tests the plotting of bounding box annotations for multiple images of a specified monument in a specified dataset.
 
-    :param dataset_name:
-    :param monument_name:
-    :param size_test:
-    :return:
+    :param dataset_name: Name of the dataset (e.g., 'rparis6k').
+    :param monument_name: Name of the monument (e.g., 'defense').
+    :param size_test: Number of images to test.
+    :return: None
     """
+    # FIXME: with this implementations xml annotations are needed
     images = []
     xmls = []
     j = 0
@@ -151,8 +202,11 @@ def test_monument(dataset_name, monument_name, size_test):
 
 def main():
     """
+    Main function to test the bounding box annotation visualization functions.
 
-    :return:
+    Uncomment the relevant lines to test specific examples.
+
+    :return: None
     """
     #test_query(0)
     image_name = "paris_defense_000060" # easy example

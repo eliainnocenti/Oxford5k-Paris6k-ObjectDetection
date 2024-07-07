@@ -1,5 +1,60 @@
 """
-TODO: add file and function descriptions
+This script creates annotations for the Oxford 5k and Paris 6k datasets in XML or JSON format.
+
+Classes:
+--------
+- BoundingBox: Represents a bounding box with coordinates for the top-left (xmin, ymin) and bottom-right (xmax, ymax) corners.
+- Object: Represents an object in an image, including its name, pose, truncation, difficulty, and bounding box.
+
+Functions:
+----------
+1. load_pickle(file_path):
+    Loads and returns data from a pickle file.
+
+2. check_pickle_structure(data):
+    Checks if the structure of the pickle file data is as expected.
+
+3. map_query_to_monument(query_images, monuments):
+    Maps query images to their respective monuments based on the monument names.
+
+4. find_monument_by_query_number(query_number, monuments_dict):
+    Finds the monument corresponding to a given query number.
+
+5. get_dataset_size(image_folder):
+    Gets the size of the dataset based on the number of images in the folder.
+
+6. check_substring(full_string, prefix, target_substring):
+    Checks if a target substring is present in a full string after a specified prefix.
+
+7. create_xml(folder_name, image_name, width, height, objects, output_folder):
+    Creates an XML annotation file for a given image.
+
+8. create_json(categories, images, annotations, output_folder, name="labels"):
+    Creates a JSON file for the annotations.
+
+9. create_classes_list(data, folder_name):
+    Creates a list of classes from the dataset.
+
+10. get_id_by_name(categories, name):
+
+11. process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=2):
+    Processes the dataset to create annotations in XML or JSON format.
+
+12. main(datasets=None, type='xml', levels=2):
+    Main function to create annotations for the specified datasets.
+
+Dependencies:
+-------------
+- pickle
+- xml.etree.ElementTree
+- minidom
+- os
+- json
+- PIL (Python Imaging Library)
+
+Usage:
+------
+To run this script, ensure that the required libraries are installed and the data directory is correctly set.
 """
 
 import pickle
@@ -13,6 +68,9 @@ from PIL import Image
 
 
 class BoundingBox:
+    """
+    Represents a bounding box with coordinates for the top-left (xmin, ymin) and bottom-right (xmax, ymax) corners.
+    """
     def __init__(self, xmin, ymin, xmax, ymax):
         self.xmin = xmin
         self.ymin = ymin
@@ -24,6 +82,9 @@ class BoundingBox:
 
 
 class Object:
+    """
+    Represents an object in an image, including its name, pose, truncation, difficulty, and bounding box.
+    """
     def __init__(self, name, pose, truncated, difficult, bounding_box=None):
         self.name = name
         self.pose = pose
@@ -37,9 +98,10 @@ class Object:
 
 def load_pickle(file_path):
     """
+    Loads a pickle file from the given file path.
 
-    :param file_path:
-    :return:
+    :param file_path: Path to the pickle file.
+    :return: Data loaded from the pickle file.
     """
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
@@ -48,9 +110,10 @@ def load_pickle(file_path):
 
 def check_pickle_structure(data):
     """
+    Checks if the structure of the pickle file data is as expected.
 
-    :param data:
-    :return:
+    :param data: Data loaded from the pickle file.
+    :return: True if structure is valid, False otherwise.
     """
     # Check if the structure of the pkl file is the expected one
     if 'gnd' in data and 'imlist' in data and 'qimlist' in data:
@@ -60,10 +123,11 @@ def check_pickle_structure(data):
 
 def map_query_to_monument(query_images, monuments):
     """
+    Maps query images to their respective monuments based on the monument names.
 
-    :param query_images:
-    :param monuments:
-    :return:
+    :param query_images: Dictionary of query images.
+    :param monuments: List of monuments.
+    :return: Dictionary mapping each monument to the list of query image indices.
     """
     query_to_monument = {}
     for monument in monuments:
@@ -76,10 +140,11 @@ def map_query_to_monument(query_images, monuments):
 
 def find_monument_by_query_number(query_number, monuments_dict):
     """
+    Finds the monument corresponding to a given query number.
 
-    :param query_number:
-    :param monuments_dict:
-    :return:
+    :param query_number: Query number.
+    :param monuments_dict: Dictionary mapping monuments to query image indices.
+    :return: Monument name or "Query number not found".
     """
     for monument, queries in monuments_dict.items():
         if query_number in queries:
@@ -107,14 +172,15 @@ def check_substring(full_string, prefix, target_substring): # TODO: check usage
 
 def create_xml(folder_name, image_name, width, height, objects, output_folder):
     """
+    Creates an XML annotation file for a given image.
 
-    :param folder_name:
-    :param image_name:
-    :param width:
-    :param height:
-    :param objects:
-    :param output_folder:
-    :return:
+    :param folder_name: Name of the folder containing the images.
+    :param image_name: Name of the image file.
+    :param width: Width of the image.
+    :param height: Height of the image.
+    :param objects: List of objects in the image.
+    :param output_folder: Folder to save the XML file.
+    :return: None
     """
     root = ET.Element("annotation")
 
@@ -160,13 +226,14 @@ def create_xml(folder_name, image_name, width, height, objects, output_folder):
 
 def create_json(categories, images, annotations, output_folder, name="labels"):
     """
+    Creates a JSON file for the annotations.
 
-    :param categories:
-    :param images:
-    :param annotations:
-    :param output_folder:
-    :param name:
-    :return:
+    :param categories: List of categories for the annotations.
+    :param images: List of images with their IDs and filenames.
+    :param annotations: List of annotations with their bounding boxes.
+    :param output_folder: Folder to save the JSON file.
+    :param name: Name of the JSON file (default is "labels").
+    :return: None
     """
     data = {
         "categories": categories,
@@ -180,10 +247,11 @@ def create_json(categories, images, annotations, output_folder, name="labels"):
 
 def create_classes_list(data, folder_name):  # FIXME: update function
     """
+    Creates a list of classes from the dataset.
 
-    :param data:
-    :param folder_name:
-    :return:
+    :param data: Data loaded from the pickle file.
+    :param folder_name: Name of the folder containing the dataset.
+    :return: None
     """
     # TODO: check if the file already exists
     classes = {}
@@ -199,6 +267,13 @@ def create_classes_list(data, folder_name):  # FIXME: update function
 
 
 def get_id_by_name(categories, name):
+    """
+    Gets the ID of a category by its name.
+
+    :param categories: List of categories.
+    :param name: Name of the category.
+    :return: ID of the category or None if not found.
+    """
     for category in categories:
         if category['name'] == name:
             return category['id']
@@ -207,15 +282,15 @@ def get_id_by_name(categories, name):
 
 def process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=2):
     """
+    Processes the dataset to create annotations in XML or JSON format.
 
-    :param folder_name:
-    :param data:
-    :param image_folder:
-    :param output_folder:
-    :param monuments_list:
-    :param type:
-    :param levels:
-    :return:
+    :param folder_name: Name of the folder containing the dataset.
+    :param data: Data loaded from the pickle file.
+    :param image_folder: Folder containing the images.
+    :param output_folder: Folder to save the annotations.
+    :param monuments_list: List of monuments to annotate.
+    :param type: Type of annotation file ('xml' or 'json').
+    :param levels: Number of difficulty levels to consider (1, 2, or 3).
     """
     if type == "xml":
 
@@ -354,6 +429,7 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
 
         categories = []
         i = 1
+        categories.append({"id": 0, "name": "background"})
         for monument in monuments_list:
             categories.append({"id": i, "name": monument})
             i += 1
@@ -477,11 +553,12 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
 
 def main(datasets=None, type='xml', levels=2):
     """
+    Main function to create annotations for the specified datasets.
 
-    :param datasets:
-    :param type:
-    :param levels:
-    :return:
+    :param datasets: List of datasets to process (default is None).
+    :param type: Type of annotation file ('xml' or 'json').
+    :param levels: Number of difficulty levels to consider (1, 2, or 3).
+    :return: None
     """
     base_path = "../../../Data/"
 

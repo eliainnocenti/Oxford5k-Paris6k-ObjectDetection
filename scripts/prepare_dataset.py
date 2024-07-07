@@ -1,5 +1,34 @@
 """
-TODO: add file and function descriptions
+This script handles the loading, splitting, and preparation of image datasets for training, validation, and testing.
+
+Functions:
+----------
+1. load_pickle(file_path):
+    Loads and returns data from a pickle file.
+
+2. split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
+    Splits the dataset into training, validation, and test sets based on the specified percentages.
+
+3. split_annotations(dataset_name, type='json'):
+    Splits the annotations into training, validation, and test sets based on the specified type.
+
+4. prepare_dataset(dataset_name, type='xml', levels=3):
+    Prepares the dataset by creating annotations and splitting it into training, validation, and test sets.
+
+5. main():
+    Main function to initiate the dataset preparation for specified datasets.
+
+Dependencies:
+-------------
+- os
+- random
+- pickle
+- json
+- scripts.create_annotations (Ensure that the create_annotations script is accessible and correctly imported)
+
+Usage:
+------
+To run this script, ensure that the required libraries are installed and the data directory is correctly set.
 """
 
 import os
@@ -15,119 +44,32 @@ base_path = "../../../Data/"
 
 def load_pickle(file_path):
     """
+    Loads data from a pickle file.
 
-    :param file_path:
-    :return:
+    :param file_path: Path to the pickle file.
+    :return: Loaded data.
     """
     with open(file_path, 'rb') as f:
         data = pickle.load(f)
     return data
 
 
-def generate_txt_files(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1, levels=3):
+def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
     """
+    Splits the dataset into training, validation, and test sets based on specified percentages.
 
-    :param dataset_name:
-    :param train_percent:
-    :param val_percent:
-    :param test_percent:
-    :param levels:
-    :return:
+    :param dataset_name: Name of the dataset.
+    :param train_percent: Percentage of data for the training set.
+    :param val_percent: Percentage of data for the validation set.
+    :param test_percent: Percentage of data for the test set.
+    :return: None
     """
-    # FIXME: update function
-    # FIXME: check the usage of the classes.txt file
     percent = train_percent + val_percent + test_percent
     if abs(1 - percent) > 0.000001:
         print("Error: Train, validation and test percentages must sum up to 1")
         return
 
-    images_dir = os.path.join(base_path, 'datasets', dataset_name, 'images')
-    annotations_dir = os.path.join('../data/', dataset_name, 'annotations/xml')
-    classes_file = os.path.join('../data/', dataset_name, 'sets', 'classes.txt')
-    pickle_file = os.path.join(base_path, 'datasets', dataset_name, f'gnd_{dataset_name}.pkl')
-
-    train_set = []
-    val_set = []
-    test_set = []
-
-    classes = {}
-    data = load_pickle(pickle_file)
-
-    with open(classes_file, 'r') as file:
-        for line in file:
-            number, string = line.split(':')
-            number = int(number)
-            classes[number] = string.strip()
-
-    images = []
-    images_idx = []
-
-    for idx in range(len(data['gnd'])):
-        if levels == 3:
-            images_idx += data['gnd'][idx]['easy']
-            images_idx += data['gnd'][idx]['hard']
-            images_idx += data['gnd'][idx]['junk']
-        elif levels == 2:
-            images_idx += data['gnd'][idx]['easy']
-            images_idx += data['gnd'][idx]['hard']
-        elif levels == 1:
-            images_idx += data['gnd'][idx]['easy']
-        else:
-            print("Error: Invalid number of levels")
-            return
-
-    random.shuffle(images_idx)
-
-    # remove duplicates
-    images_idx = list(set(images_idx))
-
-    #print(f"Number of images_idx: {len(images_idx)}")
-
-    for image_idx in images_idx:
-        image = data['imlist'][image_idx]
-        images.append(image)
-
-    #print(f"Number of images: {len(images)}")
-
-    train_size = int(len(images) * train_percent)
-    val_size = int(len(images) * val_percent)
-    test_size = len(images) - train_size - val_size
-
-    train_set += images[:train_size]
-    val_set += images[train_size:train_size + val_size]
-    test_set += images[train_size + val_size:]
-
-    with open(os.path.join(base_path, dataset_name, 'train.txt'), 'w') as file:
-        for image in train_set:
-            #image_idx = data['imlist'].index(image) # TODO: do i need this?
-            file.write(f'{image}\n')
-
-    with open(os.path.join(base_path, dataset_name, 'val.txt'), 'w') as file:
-        for image in val_set:
-            #image_idx = data['imlist'].index(image) # TODO: do i need this?
-            file.write(f'{image}\n')
-
-    with open(os.path.join(base_path, dataset_name, 'test.txt'), 'w') as file:
-        for image in test_set:
-            #image_idx = data['imlist'].index(image) # TODO: do i need this?
-            file.write(f'{image}\n')
-
-    with open(os.path.join(base_path, dataset_name, 'trainval.txt'), 'w') as file:
-        images = train_set + val_set
-        random.shuffle(images)
-        for image in images:
-            #image_idx = data['imlist'].index(image) # TODO: do i need this?
-            file.write(f'{image}\n')
-
-
-def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
-    """
-
-    :param dataset_name:
-    :param train_percent:
-    :param val_percent:
-    :return:
-    """
+    # FIXME: handle the case where there are no xml annotations
     annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
     annotations = [file for file in os.listdir(annotations_dir) if file.endswith('.xml')]
     images = [os.path.splitext(file)[0] for file in annotations]
@@ -143,25 +85,26 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
     val_set = images[train_size:train_size + val_size]
     test_set = images[train_size + val_size:]
 
-    with open(os.path.join('../data', dataset_name, 'sets', 'train.txt'), 'w') as file:
+    with open(os.path.join('../data', dataset_name, 'sets', 'train', 'train.txt'), 'w') as file:
         for image in train_set:
             file.write(f'{image}.jpg\n')
 
-    with open(os.path.join('../data', dataset_name, 'sets', 'val.txt'), 'w') as file:
+    with open(os.path.join('../data', dataset_name, 'sets', 'validation', 'val.txt'), 'w') as file:
         for image in val_set:
             file.write(f'{image}.jpg\n')
 
-    with open(os.path.join('../data', dataset_name, 'sets', 'test.txt'), 'w') as file:
+    with open(os.path.join('../data', dataset_name, 'sets', 'test', 'test.txt'), 'w') as file:
         for image in test_set:
             file.write(f'{image}.jpg\n')
 
 
 def split_annotations(dataset_name, type='json'):
     """
+    Splits the annotations into training, validation, and test sets based on the specified type.
 
-    :param dataset_name:
-    :param type:
-    :return:
+    :param dataset_name: Name of the dataset.
+    :param type: Type of annotations ('json' or 'xml').
+    :return: None
     """
     train_set = []
     val_set = []
@@ -169,15 +112,19 @@ def split_annotations(dataset_name, type='json'):
 
     sets_dir = os.path.join('../data', dataset_name, 'sets')
 
-    with open(os.path.join(sets_dir, 'train.txt'), 'r') as file:
+    os.makedirs(os.path.join(sets_dir, 'train'), exist_ok=True)
+    os.makedirs(os.path.join(sets_dir, 'validation'), exist_ok=True)
+    os.makedirs(os.path.join(sets_dir, 'test'), exist_ok=True)
+
+    with open(os.path.join(sets_dir, 'test', 'train.txt'), 'r') as file:
         for line in file:
             train_set.append(line.strip())
 
-    with open(os.path.join(sets_dir, 'val.txt'), 'r') as file:
+    with open(os.path.join(sets_dir, 'validation', 'val.txt'), 'r') as file:
         for line in file:
             val_set.append(line.strip())
 
-    with open(os.path.join(sets_dir, 'test.txt'), 'r') as file:
+    with open(os.path.join(sets_dir, 'test', 'test.txt'), 'r') as file:
         for line in file:
             test_set.append(line.strip())
 
@@ -216,13 +163,13 @@ def split_annotations(dataset_name, type='json'):
 
 def prepare_dataset(dataset_name, type='xml', levels=3):
     """
+    Prepares the dataset by creating annotations and splitting it into training, validation, and test sets.
 
-    :param dataset_name:
-    :param type:
-    :param levels:
-    :return:
+    :param dataset_name: Name of the dataset.
+    :param type: Type of annotations ('xml' or 'json').
+    :param levels: Number of levels for annotation creation.
+    :return: None
     """
-    # Check if annotations dir are already created
     if type == 'xml':
         annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
     elif type == 'json':
@@ -231,6 +178,7 @@ def prepare_dataset(dataset_name, type='xml', levels=3):
         print("Error: Invalid type of annotation")
         return
 
+    # Check if annotations dir are already created
     if not os.path.exists(annotations_dir) or \
             (os.path.exists(annotations_dir) and type == 'xml' and len(os.listdir(annotations_dir)) == 0) or \
             (os.path.exists(annotations_dir) and type == 'json' and not any(
@@ -254,14 +202,12 @@ def prepare_dataset(dataset_name, type='xml', levels=3):
         print("Exiting...")
         return
 
-    # Create txt files
-    #generate_txt_files(dataset_name, levels=levels) # FIXME
-
 
 def main():
     """
+    Main function to initiate the dataset preparation for specified datasets.
 
-    :return:
+    :return: None
     """
     datasets = [
         #'roxford5k',
