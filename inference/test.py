@@ -11,7 +11,7 @@ import numpy as np
 base_path = "../../../Data/"
 
 # Load the TFLite model
-interpreter = tf.lite.Interpreter(model_path='../models/model.tflite')
+interpreter = tf.lite.Interpreter(model_path='../models/model2.tflite')
 interpreter.allocate_tensors()
 
 # Get input and output details
@@ -76,13 +76,54 @@ def visualize_detections(image_path, boxes, classes_scores, threshold=0.5):
     plt.show()
 
 
-def main():
+def train_images():
     """
 
     :return:
     """
+    train_path = '../data/rparis6k/sets/train/train.txt'
 
-    test_path = '../data/rparis6k/sets/test.txt'
+    if not os.path.exists(train_path):
+        print(f"Error: Train file not found: {train_path}")
+        return
+
+    with open(train_path, 'r') as f:
+        train_images = [line.strip() for line in f]
+
+    for image_name in train_images[:5]:
+        image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', image_name)
+        image_np = load_image_into_numpy_array(image_path)
+        boxes, classes_scores = run_inference(image_np)
+        visualize_detections(image_path, boxes, classes_scores)
+
+
+def validation_images():
+    """
+
+    :return:
+    """
+    validation_path = '../data/rparis6k/sets/validation/val.txt'
+
+    if not os.path.exists(validation_path):
+        print(f"Error: Validation file not found: {validation_path}")
+        return
+
+    with open(validation_path, 'r') as f:
+        validation_images = [line.strip() for line in f]
+
+    for image_name in validation_images[:5]:
+        image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', image_name)
+        image_np = load_image_into_numpy_array(image_path)
+        boxes, classes_scores = run_inference(image_np)
+        visualize_detections(image_path, boxes, classes_scores)
+
+
+def test_images():
+    """
+
+    :return:
+    """
+    test_path = '../data/rparis6k/sets/test/test.txt'
 
     if not os.path.exists(test_path):
         print(f"Error: Test file not found: {test_path}")
@@ -96,6 +137,17 @@ def main():
         image_np = load_image_into_numpy_array(image_path)
         boxes, classes_scores = run_inference(image_np)
         visualize_detections(image_path, boxes, classes_scores)
+
+
+def main():
+    """
+
+    :return:
+    """
+
+    #train_images()
+    #validation_images()
+    #test_images()
 
 
 if __name__ == '__main__':
