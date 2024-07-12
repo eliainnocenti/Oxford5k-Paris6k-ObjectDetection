@@ -11,7 +11,7 @@ import numpy as np
 base_path = "../../../Data/"
 
 # Load the TFLite model
-interpreter = tf.lite.Interpreter(model_path='../models/model2.tflite')
+interpreter = tf.lite.Interpreter(model_path='../models/model.tflite')
 interpreter.allocate_tensors()
 
 # Get input and output details
@@ -145,7 +145,7 @@ def main():
     :return:
     """
 
-    #train_images()
+    train_images()
     #validation_images()
     #test_images()
 

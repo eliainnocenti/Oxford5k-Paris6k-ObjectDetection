@@ -15,7 +15,7 @@ python get_data.py
 python prepare_dataset.py
 ```
 
-<!-- TODO: implement scheme for the data processing -->
+<!-- TODO: implement the scheme for the data processing -->
 
 ```mermaid
 graph TD;

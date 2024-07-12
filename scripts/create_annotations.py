@@ -36,6 +36,7 @@ Functions:
     Creates a list of classes from the dataset.
 
 10. get_id_by_name(categories, name):
+    Gets the ID of a category by its name.
 
 11. process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=2):
     Processes the dataset to create annotations in XML or JSON format.
@@ -503,7 +504,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
                 _objects[monument] = []
             _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
 
-        # merge bbox for the same monument # FIXME: choose another way to merge
+        # merge bbox for the same monument # FIXME: choose another way to merge (?)
         for monument in _objects.keys():
             xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
             difficulty = 0
@@ -585,7 +586,7 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
     print("Annotations created successfully")
 
 
-def main(datasets=None, type='xml', levels=2):
+def main(datasets=None, type='xml', levels=1):
     """
     Main function to create annotations for the specified datasets.
 

@@ -90,7 +90,6 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
         with open(labels_file, 'r') as file:
             labels_json = json.load(file)
         # insert in images only the images that have at least one annotation
-        # TODO: check
         images = [image['file_name'] for image in labels_json['images']]
         for image in labels_json['images']:
             if image['id'] not in [annotation['image_id'] for annotation in labels_json['annotations']]:
@@ -190,7 +189,7 @@ def split_annotations(dataset_name, type='json'):
         return
 
 
-def prepare_dataset(dataset_name, type='xml', levels=3):
+def prepare_dataset(dataset_name, type='xml', levels=1):
     """
     Prepares the dataset by creating annotations and splitting it into training, validation, and test sets.
 
@@ -239,7 +238,7 @@ def main():
     :return: None
     """
     datasets = [
-        #'roxford5k',
+        #'roxford5k', # TODO: uncomment
         'rparis6k'
     ]
 
