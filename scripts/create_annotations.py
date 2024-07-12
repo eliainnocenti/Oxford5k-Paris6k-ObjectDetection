@@ -280,10 +280,270 @@ def get_id_by_name(categories, name):
     return None
 
 
+def _process_data_xml(folder_name, data, image_folder, output_folder, monuments_list, levels=2):
+    """
+    Processes the dataset to create annotations in XML format.
+
+    :param folder_name: Name of the folder containing the dataset.
+    :param data: Data loaded from the pickle file.
+    :param image_folder: Folder containing the images.
+    :param output_folder: Folder to save the annotations.
+    :param monuments_list: List of monuments to annotate.
+    :param levels: Number of difficulty levels to consider (1, 2, or 3).
+    :return: None
+    """
+    gnd = data['gnd']
+    imlist = data['imlist']
+    qimlist = data['qimlist']
+
+    if levels == 3:
+        levels = ["easy", "hard", "junk"]
+    elif levels == 2:
+        levels = ["easy", "hard"]
+    elif levels == 1:
+        levels = ["easy"]
+    else:
+        print("Invalid number of levels")
+        return
+
+    # Create a xml file for each image in imlist and qimlist
+    # In each xml file, there must be at least one bounding box # TODO: check
+    # If the image is a query image, the bounding box must be the related query bounding box
+    # Otherwise, there must be one bounding box for each presence of the image in the gnd dictionary
+
+    query_images = {idx: image_name for idx, image_name in enumerate(data['qimlist'])}
+
+    monuments_dict = map_query_to_monument(query_images, monuments_list)
+
+    # query images
+    for idx, query_image in enumerate(qimlist):
+        image_name = query_image + ".jpg"
+        image_path = os.path.join(image_folder, image_name)
+        if not os.path.exists(image_path):  # TODO: check
+            print(f"Warning: Image {image_path} not found. Skipping.")
+            continue
+        with Image.open(image_path) as img:
+            width, height = img.size
+        _bbox = gnd[idx]['bbx']
+        bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
+        monument = find_monument_by_query_number(idx, monuments_dict)
+        objects = [Object(f"{monument}", "Unspecified", "0", "0", bbox)]  # TODO: check attributes
+        create_xml(folder_name, image_name, width, height, objects, output_folder)
+
+    # imlist images
+    for idx, image in enumerate(imlist):
+        image_name = image + ".jpg"
+        image_path = os.path.join(image_folder, image_name)
+        if not os.path.exists(image_path):  # TODO: check
+            print(f"Warning: Image {image_path} not found. Skipping.")
+            continue
+        with Image.open(image_path) as img:
+            width, height = img.size
+        # find all the bboxes related to the image
+        presences = []  # TODO: update name
+        for query_idx in range(len(qimlist)):
+            for level in levels:
+                if idx in gnd[query_idx][level]:
+                    presences.append((query_idx, level))
+        objects = []
+        _objects = {}
+        for presence in presences:
+            query_idx, level = presence
+            _bbox = gnd[query_idx]['bbx']
+            bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
+            if level == "easy":
+                level = 0
+            elif level == "hard":
+                level = 1
+            elif level == "junk":
+                level = 2
+            else:
+                level = 0
+            monument = find_monument_by_query_number(query_idx, monuments_dict)
+            if monument not in _objects:
+                _objects[monument] = []
+            _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
+        # merge bbox for the same monument
+        for monument in _objects.keys():
+            xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
+            difficulty = 0
+            for obj in _objects[monument]:
+                if obj.difficult == "1":
+                    difficulty = 1
+                xmin_avg += obj.bounding_box.xmin
+                ymin_avg += obj.bounding_box.ymin
+                xmax_avg += obj.bounding_box.xmax
+                ymax_avg += obj.bounding_box.ymax
+            xmin_avg = round(xmin_avg / len(_objects[monument]), 1)
+            ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
+            xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
+            ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
+            bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
+            objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
+        create_xml(folder_name, image_name, width, height, objects, output_folder)
+
+
+def _process_data_json(data, image_folder, output_folder, monuments_list, levels=2):
+    """
+    Processes the dataset to create annotations in JSON format.
+
+    :param data: Data loaded from the pickle file.
+    :param image_folder: Folder containing the images.
+    :param output_folder: Folder to save the annotations.
+    :param monuments_list: List of monuments to annotate.
+    :param levels: Number of difficulty levels to consider (1, 2, or 3).
+    :return: None
+    """
+    gnd = data['gnd']
+    imlist = data['imlist']
+    qimlist = data['qimlist']
+
+    if levels == 3:
+        levels = ["easy", "hard", "junk"]
+    elif levels == 2:
+        levels = ["easy", "hard"]
+    elif levels == 1:
+        levels = ["easy"]
+    else:
+        print("Invalid number of levels")
+        return
+
+    query_images = {idx: image_name for idx, image_name in enumerate(data['qimlist'])}
+
+    monuments_dict = map_query_to_monument(query_images, monuments_list)
+
+    # Creating JSON categories field
+    categories = []
+    i = 1
+    categories.append({"id": 0, "name": "background"})
+    for monument in monuments_list:
+        categories.append({"id": i, "name": monument})
+        i += 1
+
+    # Creating JSON images field
+    images = []
+    for idx, query_image in enumerate(qimlist):
+        image_name = query_image + ".jpg"
+        images.append({"id": idx, "file_name": image_name})
+    offset = len(images)
+    for idx, image in enumerate(imlist):
+        image_name = image + ".jpg"
+        images.append({"id": idx + offset, "file_name": image_name})
+
+    # Creating JSON annotations field
+    annotations = []
+
+    # query images
+    query_images_objects = {}
+    for idx, query_image in enumerate(qimlist):
+        image_name = query_image + ".jpg"
+        image_path = os.path.join(image_folder, image_name)
+        if not os.path.exists(image_path):
+            print(f"Warning: Image {image_path} not found. Skipping.")
+            continue
+        with Image.open(image_path) as img:
+            width, height = img.size
+        _bbox = gnd[idx]['bbx']
+        bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
+        monument = find_monument_by_query_number(idx, monuments_dict)
+        query_images_objects[idx] = []
+        query_images_objects[idx].append(Object(f"{monument}", "Unspecified", "0", "0", bbox))
+
+    i = 0
+    for idx in query_images_objects.keys():
+        for obj in query_images_objects[idx]:
+            category_id = get_id_by_name(categories, obj.name)
+            if category_id is None:
+                print("Error: Category not found")
+                return
+            annotations.append({
+                "id": i,
+                "image_id": idx,
+                "category_id": category_id,
+                "bbox": [obj.bounding_box.xmin, obj.bounding_box.ymin, obj.bounding_box.xmax, obj.bounding_box.ymax]
+            })
+            i += 1
+
+    # imlist images
+    other_images_objects = {}
+    for idx, image in enumerate(imlist):
+        image_name = image + ".jpg"
+        image_path = os.path.join(image_folder, image_name)
+        if not os.path.exists(image_path):
+            print(f"Warning: Image {image_path} not found. Skipping.")
+            continue
+        with Image.open(image_path) as img:
+            width, height = img.size
+
+        # find all the bboxes related to the image
+        presences = []  # TODO: update name
+        for query_idx in range(len(qimlist)):
+            for level in levels:
+                if idx in gnd[query_idx][level]:
+                    presences.append((query_idx, level))
+
+        objects = []
+        _objects = {}
+        other_images_objects[idx] = []
+
+        for presence in presences:
+            query_idx, level = presence
+            _bbox = gnd[query_idx]['bbx']
+            bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
+            if level == "easy":
+                level = 0
+            elif level == "hard":
+                level = 1
+            elif level == "junk":
+                level = 2
+            else:
+                level = 0
+            monument = find_monument_by_query_number(query_idx, monuments_dict)
+            if monument not in _objects:
+                _objects[monument] = []
+            _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
+
+        # merge bbox for the same monument # FIXME: choose another way to merge
+        for monument in _objects.keys():
+            xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
+            difficulty = 0
+            for obj in _objects[monument]:
+                if obj.difficult == "1":
+                    difficulty = 1
+                xmin_avg += obj.bounding_box.xmin
+                ymin_avg += obj.bounding_box.ymin
+                xmax_avg += obj.bounding_box.xmax
+                ymax_avg += obj.bounding_box.ymax
+            xmin_avg = round(xmin_avg / len(_objects[monument]), 1)
+            ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
+            xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
+            ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
+            bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
+            objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
+        other_images_objects[idx] = objects
+
+    i = len(annotations) # TODO: check
+    offset = len(qimlist)
+    for idx in other_images_objects.keys():
+        for obj in other_images_objects[idx]:
+            category_id = get_id_by_name(categories, obj.name)
+            if category_id is None:
+                print("Error: Category not found")
+                return
+            annotations.append({
+                "id": i,
+                "image_id": idx + offset,
+                "category_id": category_id,
+                "bbox": [obj.bounding_box.xmin, obj.bounding_box.ymin, obj.bounding_box.xmax, obj.bounding_box.ymax]
+            })
+            i += 1
+
+    create_json(categories, images, annotations, output_folder)
+
+
 def process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=2):
     """
     Processes the dataset to create annotations in XML or JSON format.
-
     :param folder_name: Name of the folder containing the dataset.
     :param data: Data loaded from the pickle file.
     :param image_folder: Folder containing the images.
@@ -291,260 +551,34 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
     :param monuments_list: List of monuments to annotate.
     :param type: Type of annotation file ('xml' or 'json').
     :param levels: Number of difficulty levels to consider (1, 2, or 3).
+    :return: None
     """
+    if not check_pickle_structure(data):
+        print("Invalid pickle file structure")
+        return
+
     if type == "xml":
 
         output_folder = os.path.join(output_folder, "xml")
 
-        if not check_pickle_structure(data):
-            print("Invalid pickle file structure")
-            return
-
-        gnd = data['gnd']
-        imlist = data['imlist']
-        qimlist = data['qimlist']
-
-        if levels == 3:
-            levels = ["easy", "hard", "junk"]
-        elif levels == 2:
-            levels = ["easy", "hard"]
-        elif levels == 1:
-            levels = ["easy"]
-        else:
-            print("Invalid number of levels")
-            return
-
         os.makedirs(output_folder, exist_ok=True)
 
-        # Create a xml file for each image in imlist and qimlist
-        # In each xml file, there must be at least one bounding box # TODO: check
-        # If the image is a query image, the bounding box must be the related query bounding box
-        # Otherwise, there must be one bounding box for each presence of the image in the gnd dictionary
+        _process_data_xml(folder_name, data, image_folder, output_folder, monuments_list, levels)
 
-        query_images = {idx: image_name for idx, image_name in enumerate(data['qimlist'])}
-
-        monuments_dict = map_query_to_monument(query_images, monuments_list)
-
-        # query images
-        for idx, query_image in enumerate(qimlist):
-            image_name = query_image + ".jpg"
-            image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path):  # TODO: check
-                print(f"Warning: Image {image_path} not found. Skipping.")
-                continue
-            with Image.open(image_path) as img:
-                width, height = img.size
-            _bbox = gnd[idx]['bbx']
-            bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
-            monument = find_monument_by_query_number(idx, monuments_dict)
-            objects = [Object(f"{monument}", "Unspecified", "0", "0", bbox)]  # TODO: check attributes
-            create_xml(folder_name, image_name, width, height, objects, output_folder)
-
-        # imlist images
-        for idx, image in enumerate(imlist):
-            image_name = image + ".jpg"
-            image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path):  # TODO: check
-                print(f"Warning: Image {image_path} not found. Skipping.")
-                continue
-            with Image.open(image_path) as img:
-                width, height = img.size
-            # find all the bboxes related to the image
-            presences = []  # TODO: update name
-            for query_idx in range(len(qimlist)):
-                for level in levels:
-                    if idx in gnd[query_idx][level]:
-                        presences.append((query_idx, level))
-            objects = []
-            _objects = {}
-            for presence in presences:
-                query_idx, level = presence
-                _bbox = gnd[query_idx]['bbx']
-                bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
-                if level == "easy":
-                    level = 0
-                elif level == "hard":
-                    level = 1
-                elif level == "junk":
-                    level = 2
-                else:
-                    level = 0
-                monument = find_monument_by_query_number(query_idx, monuments_dict)
-                if monument not in _objects:
-                    _objects[monument] = []
-                _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
-            # merge bbox for the same monument
-            for monument in _objects.keys():
-                xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
-                difficulty = 0
-                for obj in _objects[monument]:
-                    if obj.difficult == "1":
-                        difficulty = 1
-                    xmin_avg += obj.bounding_box.xmin
-                    ymin_avg += obj.bounding_box.ymin
-                    xmax_avg += obj.bounding_box.xmax
-                    ymax_avg += obj.bounding_box.ymax
-                xmin_avg = round(xmin_avg / len(_objects[monument]), 1)
-                ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
-                xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
-                ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
-                bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
-                objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
-            create_xml(folder_name, image_name, width, height, objects, output_folder)
-
-        #create_classes_list(data, folder_name)  # FIXME: do i need the file classes.txt?
+        # create_classes_list(data, folder_name)  # FIXME: do i need the file classes.txt?
 
         print(f"XML annotations created in: {output_folder}")
         print(f"Dataset size: {get_dataset_size(image_folder)}")  # number of images in the dataset
         print(f"Annotations created: {len(os.listdir(output_folder))}")  # number of annotations created
 
+
     elif type == "json":
 
         output_folder = os.path.join(output_folder, "json")
 
-        if not check_pickle_structure(data):
-            print("Invalid pickle file structure")
-            return
-
-        gnd = data['gnd']
-        imlist = data['imlist']
-        qimlist = data['qimlist']
-
-        if levels == 3:
-            levels = ["easy", "hard", "junk"]
-        elif levels == 2:
-            levels = ["easy", "hard"]
-        elif levels == 1:
-            levels = ["easy"]
-        else:
-            print("Invalid number of levels")
-            return
-
         os.makedirs(output_folder, exist_ok=True)
 
-        query_images = {idx: image_name for idx, image_name in enumerate(data['qimlist'])}
-
-        monuments_dict = map_query_to_monument(query_images, monuments_list)
-
-
-        categories = []
-        i = 1
-        categories.append({"id": 0, "name": "background"})
-        for monument in monuments_list:
-            categories.append({"id": i, "name": monument})
-            i += 1
-
-        images = []
-        for idx, query_image in enumerate(qimlist):
-            image_name = query_image + ".jpg"
-            images.append({"id": idx, "file_name": image_name})
-        offset = len(images)
-        for idx, image in enumerate(imlist):
-            image_name = image + ".jpg"
-            images.append({"id": idx + offset, "file_name": image_name}) # TODO: check
-
-        annotations = []
-
-        # query images
-        query_images_objects = {}
-        for idx, query_image in enumerate(qimlist):
-            image_name = query_image + ".jpg"
-            image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path):  # TODO: check
-                print(f"Warning: Image {image_path} not found. Skipping.")
-                continue
-            with Image.open(image_path) as img:
-                width, height = img.size
-            _bbox = gnd[idx]['bbx']
-            bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
-            monument = find_monument_by_query_number(idx, monuments_dict)
-            query_images_objects[idx] = []
-            query_images_objects[idx].append(Object(f"{monument}", "Unspecified", "0", "0", bbox))
-
-        # imlist images
-        other_images_objects = {}
-        for idx, image in enumerate(imlist):
-            image_name = image + ".jpg"
-            image_path = os.path.join(image_folder, image_name)
-            if not os.path.exists(image_path):  # TODO: check
-                print(f"Warning: Image {image_path} not found. Skipping.")
-                continue
-            with Image.open(image_path) as img:
-                width, height = img.size
-            # find all the bboxes related to the image
-            presences = []  # TODO: update name
-            for query_idx in range(len(qimlist)):
-                for level in levels:
-                    if idx in gnd[query_idx][level]:
-                        presences.append((query_idx, level))
-            objects = []
-            _objects = {}
-            other_images_objects[idx] = []
-            for presence in presences:
-                query_idx, level = presence
-                _bbox = gnd[query_idx]['bbx']
-                bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
-                if level == "easy":
-                    level = 0
-                elif level == "hard":
-                    level = 1
-                elif level == "junk":
-                    level = 2
-                else:
-                    level = 0
-                monument = find_monument_by_query_number(query_idx, monuments_dict)
-                if monument not in _objects:
-                    _objects[monument] = []
-                _objects[monument].append(Object(f"{monument}", "Unspecified", "0", str(level), bbox))
-            # merge bbox for the same monument
-            for monument in _objects.keys():
-                xmin_avg, ymin_avg, xmax_avg, ymax_avg = 0, 0, 0, 0
-                difficulty = 0
-                for obj in _objects[monument]:
-                    if obj.difficult == "1":
-                        difficulty = 1
-                    xmin_avg += obj.bounding_box.xmin
-                    ymin_avg += obj.bounding_box.ymin
-                    xmax_avg += obj.bounding_box.xmax
-                    ymax_avg += obj.bounding_box.ymax
-                xmin_avg = round(xmin_avg / len(_objects[monument]), 1)
-                ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
-                xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
-                ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
-                bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
-                objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
-            other_images_objects[idx] = objects
-
-        i = 0
-        for idx in query_images_objects.keys():
-            for obj in query_images_objects[idx]:
-                category_id = get_id_by_name(categories, obj.name)
-                if category_id is None:
-                    print("Error: Category not found")
-                    return
-                annotations.append({
-                    "id": 0,
-                    "image_id": idx,
-                    "category_id": category_id,
-                    "bbox": [obj.bounding_box.xmin, obj.bounding_box.ymin, obj.bounding_box.xmax, obj.bounding_box.ymax]
-                })
-                i += 1
-
-        for idx in other_images_objects.keys():
-            for obj in other_images_objects[idx]:
-                category_id = get_id_by_name(categories, obj.name)
-                if category_id is None:
-                    print("Error: Category not found")
-                    return
-                annotations.append({
-                    "id": i,
-                    "image_id": idx,
-                    "category_id": category_id,
-                    "bbox": [obj.bounding_box.xmin, obj.bounding_box.ymin, obj.bounding_box.xmax, obj.bounding_box.ymax]
-                })
-                i += 1
-
-        create_json(categories, images, annotations, output_folder)
+        _process_data_json(data, image_folder, output_folder, monuments_list, levels)
 
         print(f"JSON annotations created in: {output_folder}")
 
@@ -591,4 +625,4 @@ def main(datasets=None, type='xml', levels=2):
 
 
 if __name__ == "__main__":
-    main(type='json')
+    main(type='json', levels=1)

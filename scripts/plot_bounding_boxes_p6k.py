@@ -103,7 +103,7 @@ def plot_bounding_box_annotation(image_path, annotation_xml):
     plt.show()
 
 
-def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
+def plot_bounding_box(image_path, xmin, ymin, xmax, ymax, color='red'):
     """
     Plots an image with a single bounding box.
 
@@ -112,6 +112,7 @@ def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
     :param ymin: Minimum y-coordinate of the bounding box.
     :param xmax: Maximum x-coordinate of the bounding box.
     :param ymax: Maximum y-coordinate of the bounding box.
+    :param color: Color of the bounding box (default is 'red').
     :return: None
     """
     # Load the image
@@ -121,8 +122,18 @@ def plot_bounding_box(image_path, xmin, ymin, xmax, ymax):
     fig, ax = plt.subplots(1)
     ax.imshow(image)
 
+    if color == 'red':
+        color = 'r'
+    elif color == 'yellow':
+        color = 'yellow'
+    elif color == 'green':
+        color = 'green'
+    else:
+        print("Color not recognized")
+        return
+
     # Create and add the bounding box rectangle
-    rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, linewidth=2, edgecolor='r', facecolor='none')
+    rect = patches.Rectangle((xmin, ymin), xmax - xmin, ymax - ymin, linewidth=2, edgecolor=color, facecolor='none')
     ax.add_patch(rect)
 
     ax.axis('off')
@@ -200,6 +211,28 @@ def test_monument(dataset_name, monument_name, size_test):
         plot_bounding_box_annotation(images[i], xmls[i])
 
 
+def test_image_imlist_85():
+    image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', 'paris_defense_000060.jpg')
+    # 130, 17, 843, 732 red
+    # 258, 88, 805, 619 red
+    # 213, 67, 765, 609 red
+    # 8, 104, 707, 913 red
+    # 226, 77, 645, 510 red
+    # 0, 0, 1023, 767 yellow
+    # 134.7, 37.6, 893.3, 691.2 yellow
+    # 0, 0, 767, 1023 yellow
+    # 121.2, 48.8, 806.0, 733.0 green
+    plot_bounding_box(image_path, 130, 17, 843, 732, 'red')
+    plot_bounding_box(image_path, 258, 88, 805, 619, 'red')
+    plot_bounding_box(image_path, 213, 67, 765, 609, 'red')
+    plot_bounding_box(image_path, 8, 104, 707, 913, 'red')
+    plot_bounding_box(image_path, 226, 77, 645, 510, 'red')
+    plot_bounding_box(image_path, 0, 0, 1023, 767, 'yellow')
+    plot_bounding_box(image_path, 134.7, 37.6, 893.3, 691.2, 'yellow')
+    plot_bounding_box(image_path, 0, 0, 767, 1023, 'yellow')
+    plot_bounding_box(image_path, 121.2, 48.8, 806.0, 733.0, 'green')
+
+
 def main():
     """
     Main function to test the bounding box annotation visualization functions.
@@ -214,7 +247,9 @@ def main():
     image_name = "paris_defense_000101" # hard example
     #test_image('rparis6k', image_name)
 
-    test_monument('rparis6k', 'defense', 10)
+    #test_monument('rparis6k', 'defense', 10)
+
+    test_image_imlist_85()
 
 
 if __name__ == "__main__":

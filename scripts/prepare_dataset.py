@@ -54,7 +54,7 @@ def load_pickle(file_path):
     return data
 
 
-def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1):
+def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_percent=0.1, type='json'):
     """
     Splits the dataset into training, validation, and test sets based on specified percentages.
 
@@ -69,10 +69,33 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
         print("Error: Train, validation and test percentages must sum up to 1")
         return
 
-    # FIXME: handle the case where there are no xml annotations
-    annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
-    annotations = [file for file in os.listdir(annotations_dir) if file.endswith('.xml')]
-    images = [os.path.splitext(file)[0] for file in annotations]
+    # check if txt files are already created
+    if os.path.exists(os.path.join('../data', dataset_name, 'sets', 'train', 'train.txt')) or \
+            os.path.exists(os.path.join('../data', dataset_name, 'sets', 'validation', 'val.txt')) or \
+            os.path.exists(os.path.join('../data', dataset_name, 'sets', 'test', 'test.txt')):
+        print(f"Train, validation and test sets already created for {dataset_name}")
+        return
+
+    if type == 'xml':
+        annotations_dir = os.path.join('../data', dataset_name, 'annotations/xml')
+        annotations = [file for file in os.listdir(annotations_dir) if file.endswith('.xml')]
+        images = [os.path.splitext(file)[0] for file in annotations]
+
+    elif type == 'json':
+        annotations_dir = os.path.join('../data', dataset_name, 'annotations/json')
+        labels_file = os.path.join(annotations_dir, 'labels.json')
+        if not os.path.exists(labels_file):
+            print(f"Error: Labels file not found: {labels_file}")
+            return
+        with open(labels_file, 'r') as file:
+            labels_json = json.load(file)
+        # insert in images only the images that have at least one annotation
+        # TODO: check
+        images = [image['file_name'] for image in labels_json['images']]
+        for image in labels_json['images']:
+            if image['id'] not in [annotation['image_id'] for annotation in labels_json['annotations']]:
+                images.remove(image['file_name'])
+
 
     train_size = int(len(images) * train_percent)
     val_size = int(len(images) * val_percent)
@@ -85,17 +108,23 @@ def split_train_val_test(dataset_name, train_percent=0.7, val_percent=0.2, test_
     val_set = images[train_size:train_size + val_size]
     test_set = images[train_size + val_size:]
 
+    sets_dir = os.path.join('../data', dataset_name, 'sets')
+
+    os.makedirs(os.path.join(sets_dir, 'train'), exist_ok=True)
+    os.makedirs(os.path.join(sets_dir, 'validation'), exist_ok=True)
+    os.makedirs(os.path.join(sets_dir, 'test'), exist_ok=True)
+
     with open(os.path.join('../data', dataset_name, 'sets', 'train', 'train.txt'), 'w') as file:
         for image in train_set:
-            file.write(f'{image}.jpg\n')
+            file.write(f'{image}\n')
 
     with open(os.path.join('../data', dataset_name, 'sets', 'validation', 'val.txt'), 'w') as file:
         for image in val_set:
-            file.write(f'{image}.jpg\n')
+            file.write(f'{image}\n')
 
     with open(os.path.join('../data', dataset_name, 'sets', 'test', 'test.txt'), 'w') as file:
         for image in test_set:
-            file.write(f'{image}.jpg\n')
+            file.write(f'{image}\n')
 
 
 def split_annotations(dataset_name, type='json'):
@@ -110,13 +139,13 @@ def split_annotations(dataset_name, type='json'):
     val_set = []
     test_set = []
 
-    sets_dir = os.path.join('../data', dataset_name, 'sets')
+    sets_dir = os.path.join('../data', dataset_name, 'sets/')
 
     os.makedirs(os.path.join(sets_dir, 'train'), exist_ok=True)
     os.makedirs(os.path.join(sets_dir, 'validation'), exist_ok=True)
     os.makedirs(os.path.join(sets_dir, 'test'), exist_ok=True)
 
-    with open(os.path.join(sets_dir, 'test', 'train.txt'), 'r') as file:
+    with open(os.path.join(sets_dir, 'train', 'train.txt'), 'r') as file:
         for line in file:
             train_set.append(line.strip())
 
@@ -144,17 +173,17 @@ def split_annotations(dataset_name, type='json'):
         val_images = [image for image in images if image['file_name'] in val_set]
         test_images = [image for image in images if image['file_name'] in test_set]
 
-        #print(f"Number of train images: {len(train_images)}")
-        #print(f"Number of val images: {len(val_images)}")
-        #print(f"Number of test images: {len(test_images)}")
+        print(f"Number of train images: {len(train_images)}")
+        print(f"Number of val images: {len(val_images)}")
+        print(f"Number of test images: {len(test_images)}")
 
         train_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in train_images]]
         val_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in val_images]]
         test_annotations = [annotation for annotation in annotations if annotation['image_id'] in [image['id'] for image in test_images]]
 
-        create_json(categories, train_images, train_annotations, sets_dir, name='train')
-        create_json(categories, val_images, val_annotations, sets_dir, name='val')
-        create_json(categories, test_images, test_annotations, sets_dir, name='test')
+        create_json(categories, train_images, train_annotations, sets_dir + 'train', name='train')
+        create_json(categories, val_images, val_annotations, sets_dir + 'validation', name='val')
+        create_json(categories, test_images, test_annotations, sets_dir + 'test', name='test')
 
     else:
         print("Error: Invalid type of annotation")
@@ -196,7 +225,7 @@ def prepare_dataset(dataset_name, type='xml', levels=3):
     print(f"Do you want to split the dataset {dataset_name} into train, validation and test sets? (y/n)")
     split = input()
     if split == 'y':
-        #split_train_val_test(dataset_name)
+        split_train_val_test(dataset_name)
         split_annotations(dataset_name, type=type)
     else:
         print("Exiting...")
@@ -215,7 +244,7 @@ def main():
     ]
 
     for dataset in datasets:
-        prepare_dataset(dataset, type='json', levels=2)
+        prepare_dataset(dataset, type='json', levels=1)
 
 
 if __name__ == "__main__":

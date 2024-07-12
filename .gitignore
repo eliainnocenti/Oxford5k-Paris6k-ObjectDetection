@@ -19,3 +19,6 @@ models/
 TODO.txt
 LICENSE.txt
 CONTRIBUTING.md
+
+# tmp files
+scripts/tmp.py
