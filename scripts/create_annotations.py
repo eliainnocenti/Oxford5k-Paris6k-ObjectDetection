@@ -281,6 +281,20 @@ def get_id_by_name(categories, name):
     return None
 
 
+def convert_bbox(bbox):
+    """
+    Converts the bounding box from (xmin, ymin, xmax, ymax) to (xmin, ymin, width, height) format.
+
+    :param bbox: Bounding box in (xmin, ymin, xmax, ymax) format.
+    :return: Bounding box in (xmin, ymin, width, height) format.
+    """
+    xmin, ymin, xmax, ymax = bbox
+    width = round(xmax - xmin, 1)
+    height = round(ymax - ymin, 1)
+
+    return [xmin, ymin, width, height]
+
+
 def _process_data_xml(folder_name, data, image_folder, output_folder, monuments_list, levels=2):
     """
     Processes the dataset to create annotations in XML format.
@@ -293,6 +307,8 @@ def _process_data_xml(folder_name, data, image_folder, output_folder, monuments_
     :param levels: Number of difficulty levels to consider (1, 2, or 3).
     :return: None
     """
+    # FIXME: fix function
+
     gnd = data['gnd']
     imlist = data['imlist']
     qimlist = data['qimlist']
@@ -445,6 +461,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
         with Image.open(image_path) as img:
             width, height = img.size
         _bbox = gnd[idx]['bbx']
+        _bbox = convert_bbox(_bbox) # TODO: check
         bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
         monument = find_monument_by_query_number(idx, monuments_dict)
         query_images_objects[idx] = []
@@ -456,7 +473,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
             category_id = get_id_by_name(categories, obj.name)
             if category_id is None:
                 print("Error: Category not found")
-                return
+                continue
             annotations.append({
                 "id": i,
                 "image_id": idx,
@@ -519,7 +536,9 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
             ymin_avg = round(ymin_avg / len(_objects[monument]), 1)
             xmax_avg = round(xmax_avg / len(_objects[monument]), 1)
             ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
-            bbox = BoundingBox(xmin_avg, ymin_avg, xmax_avg, ymax_avg)
+            _bbox = [xmin_avg, ymin_avg, xmax_avg, ymax_avg]
+            _bbox = convert_bbox(_bbox)  # TODO: check
+            bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
             objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
         other_images_objects[idx] = objects
 
@@ -530,7 +549,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
             category_id = get_id_by_name(categories, obj.name)
             if category_id is None:
                 print("Error: Category not found")
-                return
+                continue
             annotations.append({
                 "id": i,
                 "image_id": idx + offset,
@@ -542,7 +561,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
     create_json(categories, images, annotations, output_folder)
 
 
-def process_data(folder_name, data, image_folder, output_folder, monuments_list, type='xml', levels=2):
+def process_data(folder_name, data, image_folder, output_folder, monuments_list, type='json', levels=2):
     """
     Processes the dataset to create annotations in XML or JSON format.
     :param folder_name: Name of the folder containing the dataset.
@@ -586,7 +605,7 @@ def process_data(folder_name, data, image_folder, output_folder, monuments_list,
     print("Annotations created successfully")
 
 
-def main(datasets=None, type='xml', levels=1):
+def main(datasets=None, type='json', levels=1):
     """
     Main function to create annotations for the specified datasets.
 
@@ -618,8 +637,9 @@ def main(datasets=None, type='xml', levels=1):
         pickle_file = os.path.join(base_path, "datasets/rparis6k/gnd_rparis6k.pkl")
         image_folder = os.path.join(base_path, "datasets/rparis6k/images")
         output_folder = "../data/rparis6k/annotations/"
-        monuments_rparis6k = ['defense', 'eiffel', 'general', 'invalides', 'louvre', 'moulinrouge', 'museedorsay',
+        monuments_rparis6k = ['defense', 'eiffel', 'invalides', 'louvre', 'moulinrouge', 'museedorsay',
                               'notredame', 'pantheon', 'pompidou', 'sacrecoeur', 'triomphe']
+        # TODO: handle 'general' query
 
         data = load_pickle(pickle_file)
         process_data("rparis6k", data, image_folder, output_folder, monuments_rparis6k, type, levels)

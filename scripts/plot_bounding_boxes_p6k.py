@@ -33,7 +33,7 @@ Directory Structure:
         annotations/
             xml/
 
-Dependencies:
+Dependencies: # TODO: update
 -------------
 - os
 - matplotlib
@@ -50,6 +50,11 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from PIL import Image
 import xml.etree.ElementTree as ET
+
+from matplotlib import text, patheffects
+from collections import defaultdict
+import math
+import json
 
 base_path = "../../../Data/"
 
@@ -171,6 +176,8 @@ def test_image(dataset_name, image_name):
     """
     # FIXME: with this implementations xml annotations are needed
     image_path = os.path.join(base_path, 'datasets', dataset_name, 'images', image_name + '.jpg')
+
+    '''
     annotation_xml = os.path.join('../data/', dataset_name, 'annotations/xml', image_name + '.xml')
     if os.path.exists(image_path):
         if os.path.exists(annotation_xml):
@@ -179,6 +186,35 @@ def test_image(dataset_name, image_name):
             print(f"Annotation file not found: {annotation_xml}")
     else:
         print(f"Image file not found: {image_path}")
+    '''
+
+    if not os.path.exists(image_path):
+        print(f"Image file not found: {image_path}")
+        return
+
+    # load json
+    with open(os.path.join('../data', dataset_name, 'annotations', 'json', 'labels.json'), 'r') as file:
+        labels_json = json.load(file)
+    # search image id in labels_json['images']
+    image_id = None
+    for image in labels_json['images']:
+        if image['file_name'] == image_name + '.jpg':
+            image_id = image['id']
+            break
+
+    if image_id is None:
+        print(f"Image not found in labels.json: {image_name}")
+        return
+
+    # get annotations for the image
+    annotations = [annotation for annotation in labels_json['annotations'] if annotation['image_id'] == image_id]
+
+    # plot image with annotations
+    img = plt.imread(image_path)
+    fig, ax = plt.subplots(1)
+    ax.imshow(img)
+    draw_bbox(ax, annotations, {item["id"]:item["name"] for item in labels_json["categories"]}, img.shape)
+    plt.show()
 
 
 def test_monument(dataset_name, monument_name, size_test):
@@ -232,6 +268,54 @@ def test_image_imlist_85():
     plot_bounding_box(image_path, 0, 0, 767, 1023, 'yellow')
     plot_bounding_box(image_path, 121.2, 48.8, 806.0, 733.0, 'green')
 
+# TODO: it may be interesting if it shows two random images per category
+
+def draw_outline(obj):
+    obj.set_path_effects([patheffects.Stroke(linewidth=4,  foreground='black'), patheffects.Normal()])
+
+def draw_box(ax, bb):
+    patch = ax.add_patch(patches.Rectangle((bb[0],bb[1]), bb[2], bb[3], fill=False, edgecolor='red', lw=2))
+    draw_outline(patch)
+
+def draw_text(ax, bb, txt, disp):
+    text = ax.text(bb[0], (bb[1]-disp), txt, verticalalignment='top', color='white', fontsize=10, weight='bold')
+    draw_outline(text)
+
+def draw_bbox(ax, annotations_list, id_to_label, image_shape):
+    for annotation in annotations_list:
+        cat_id = annotation["category_id"]
+        bbox = annotation["bbox"]
+        draw_box(ax, bbox)
+        draw_text(ax, bbox, id_to_label[cat_id], image_shape[0] * 0.05)
+
+def visualize(dataset_folder, max_examples=None):
+    with open(os.path.join(dataset_folder, "labels.json"), "r") as f:
+        labels_json = json.load(f)
+
+    images = labels_json["images"]
+    cat_id_to_label = {item["id"]:item["name"] for item in labels_json["categories"]}
+    image_annots = defaultdict(list)
+
+    for annotation_obj in labels_json["annotations"]:
+        image_id = annotation_obj["image_id"]
+        image_annots[image_id].append(annotation_obj)
+
+    if max_examples is None:
+        max_examples = len(image_annots.items())
+
+    n_rows = math.ceil(max_examples / 3)
+    fig, axs = plt.subplots(n_rows, 3, figsize=(24, n_rows*8)) # 3 columns(2nd index), 8x8 for each image
+
+    for ind, (image_id, annotations_list) in enumerate(list(image_annots.items())[:max_examples]):
+        ax = axs[ind//3, ind%3]
+        img = plt.imread(os.path.join(dataset_folder, "images", images[image_id]["file_name"]))
+        ax.imshow(img)
+        draw_bbox(ax, annotations_list, cat_id_to_label, img.shape)
+
+    plt.show()
+
+#visualize(train_dataset_path, 9)
+
 
 def main():
     """
@@ -249,7 +333,9 @@ def main():
 
     #test_monument('rparis6k', 'defense', 10)
 
-    test_image_imlist_85()
+    #test_image_imlist_85()
+
+    test_image('rparis6k', 'paris_defense_000000')
 
 
 if __name__ == "__main__":
