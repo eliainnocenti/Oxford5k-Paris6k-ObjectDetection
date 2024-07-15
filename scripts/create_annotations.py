@@ -295,6 +295,39 @@ def convert_bbox(bbox):
     return [xmin, ymin, width, height]
 
 
+def validate_bbox(bbox, image_width, image_height):
+    """
+    Validates the bounding box to ensure it fits within the image dimensions.
+
+    :param bbox: Bounding box in (xmin, ymin, width, height) format.
+    :param image_width: Width of the image.
+    :param image_height: Height of the image.
+    :return: True if the bounding box is valid, False otherwise.
+    """
+    x, y, w, h = bbox
+
+    return 0 <= x < image_width and 0 <= y < image_height and x + w <= image_width and y + h <= image_height
+
+
+def clip_bbox(bbox, image_width, image_height):
+    """
+    Clips the bounding box to fit within the image dimensions.
+
+    :param bbox: Bounding box in (xmin, ymin, width, height) format.
+    :param image_width: Width of the image.
+    :param image_height: Height of the image.
+    :return: Clipped bounding box.
+    """
+    x_min, y_min, width, height = bbox
+
+    x_min = max(0, min(x_min, image_width - 1)) # TODO: check -1
+    y_min = max(0, min(y_min, image_height - 1)) # TODO: check -1
+    width = min(width, image_width - x_min)
+    height = min(height, image_height - y_min)
+
+    return [x_min, y_min, width, height]
+
+
 def _process_data_xml(folder_name, data, image_folder, output_folder, monuments_list, levels=2):
     """
     Processes the dataset to create annotations in XML format.
@@ -462,6 +495,7 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
             width, height = img.size
         _bbox = gnd[idx]['bbx']
         _bbox = convert_bbox(_bbox) # TODO: check
+        _bbox = clip_bbox(_bbox, width, height) # TODO: check
         bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
         monument = find_monument_by_query_number(idx, monuments_dict)
         query_images_objects[idx] = []
@@ -538,11 +572,12 @@ def _process_data_json(data, image_folder, output_folder, monuments_list, levels
             ymax_avg = round(ymax_avg / len(_objects[monument]), 1)
             _bbox = [xmin_avg, ymin_avg, xmax_avg, ymax_avg]
             _bbox = convert_bbox(_bbox)  # TODO: check
+            _bbox = clip_bbox(_bbox, width, height)  # TODO: check
             bbox = BoundingBox(_bbox[0], _bbox[1], _bbox[2], _bbox[3])
             objects.append(Object(f"{monument}", "Unspecified", "0", str(difficulty), bbox))
         other_images_objects[idx] = objects
 
-    i = len(annotations) # TODO: check
+    i = len(annotations)
     offset = len(qimlist)
     for idx in other_images_objects.keys():
         for obj in other_images_objects[idx]:

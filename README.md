@@ -1,4 +1,4 @@
-# Oxford5k-Paris6k-ObjectDetection
+# Oxford5k-Paris6k-ObjectDetection [not finished yet] 
 
 This project aims to create an object detection model for monument recognition using the Oxford5k and Paris6k datasets. The model is built using MediaPipe Model Maker for transfer learning, starting from a pre-trained model.
 

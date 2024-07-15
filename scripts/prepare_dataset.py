@@ -206,6 +206,8 @@ def prepare_dataset(dataset_name, type='xml', levels=1):
         print("Error: Invalid type of annotation")
         return
 
+    # FIXME: handle the two cases separately
+
     # Check if annotations dir are already created
     if not os.path.exists(annotations_dir) or \
             (os.path.exists(annotations_dir) and type == 'xml' and len(os.listdir(annotations_dir)) == 0) or \
