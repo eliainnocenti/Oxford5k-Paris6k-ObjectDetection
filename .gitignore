@@ -22,3 +22,4 @@ CONTRIBUTING.md
 
 # tmp files
 scripts/tmp.py
+inference/tmp.py
