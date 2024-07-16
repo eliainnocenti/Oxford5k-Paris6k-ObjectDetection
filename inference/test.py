@@ -3,6 +3,8 @@ TODO: add file and function descriptions
 """
 
 import os.path
+import random
+
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -65,6 +67,13 @@ def visualize_detections(image_path, boxes, classes_scores, threshold=0.5):
     height, width, _ = image.shape
     for box, class_score in zip(boxes[0], classes_scores[0]):
         score = np.max(class_score)
+
+        '''debug'''
+        print(f"image_path: {image_path}")
+        print(f"box: {box}")
+        print(f"class_score: {class_score}")
+        print(f"score: {score}")
+
         if score > threshold:
             ymin, xmin, ymax, xmax = box
             rect = patches.Rectangle((xmin*width, ymin*height), (xmax-xmin)*width, (ymax-ymin)*height,
@@ -90,10 +99,18 @@ def train_images():
     with open(train_path, 'r') as f:
         train_images = [line.strip() for line in f]
 
+    random.shuffle(train_images) # TODO: check
+
     for image_name in train_images[:5]:
         image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', image_name)
         image_np = load_image_into_numpy_array(image_path)
         boxes, classes_scores = run_inference(image_np)
+
+        '''debug'''
+        print(f"Image: {image_name}")
+        print(boxes)
+        print(classes_scores)
+
         visualize_detections(image_path, boxes, classes_scores)
 
 
@@ -132,7 +149,7 @@ def test_images():
     with open(test_path, 'r') as f:
         test_images = [line.strip() for line in f]
 
-    for image_name in test_images[:5]:
+    for image_name in test_images[:1]: # TODO: check
         image_path = os.path.join(base_path, 'datasets', 'rparis6k', 'images', image_name)
         image_np = load_image_into_numpy_array(image_path)
         boxes, classes_scores = run_inference(image_np)
