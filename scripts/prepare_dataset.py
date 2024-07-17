@@ -1,4 +1,5 @@
 """
+TODO: add file and function descriptions
 This script handles the loading, splitting, and preparation of image datasets for training, validation, and testing.
 
 Functions:

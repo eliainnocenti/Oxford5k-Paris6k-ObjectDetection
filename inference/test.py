@@ -1,3 +1,7 @@
+"""
+TODO: add file and function descriptions
+"""
+
 import numpy as np
 import tensorflow as tf
 import cv2
@@ -5,6 +9,8 @@ import os
 
 from scripts.plot_bounding_boxes_p6k import plot_bounding_box as plot_bounding_box
 
+# FIXME: fix bounding boxes visualization
+# TODO: study parameters and results
 
 base_path = "../../../Data/"
 rparis6k_path = os.path.join(base_path, 'datasets', 'rparis6k')
@@ -12,7 +18,7 @@ rparis6k_path = os.path.join(base_path, 'datasets', 'rparis6k')
 download_path = "/Users/eliainnocenti/Downloads"
 
 # Load the TFLite model
-interpreter = tf.lite.Interpreter(model_path="../models/model.tflite")
+interpreter = tf.lite.Interpreter(model_path="../models/model_p6k.tflite")
 interpreter.allocate_tensors()
 
 # Get input and output details
@@ -21,6 +27,12 @@ output_details = interpreter.get_output_details()
 
 
 def prepare_image(image_path, input_shape):
+    """
+
+    :param image_path:
+    :param input_shape:
+    :return:
+    """
     img = cv2.imread(image_path)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
     img = cv2.resize(img, (input_shape[1], input_shape[2]))
@@ -30,6 +42,11 @@ def prepare_image(image_path, input_shape):
 
 
 def detect_objects(image_path):
+    """
+
+    :param image_path:
+    :return:
+    """
     input_shape = input_details[0]['shape']
     img = prepare_image(image_path, input_shape)
 
@@ -43,7 +60,7 @@ def detect_objects(image_path):
     return boxes, class_scores
 
 
-# Example usage with test set images
+# Example usage with test set images                                                # monument         # confidence
 #image_path = os.path.join(rparis6k_path, 'images', 'paris_defense_000041.jpg')     # defense 1        # 0.6
 #image_path = os.path.join(rparis6k_path, 'images', 'paris_eiffel_000170.jpg')      # eiffel 2         # 0.3
 #image_path = os.path.join(rparis6k_path, 'images', 'paris_invalides_000090.jpg')   # invalides 3      # 0.2
@@ -56,15 +73,17 @@ def detect_objects(image_path):
 #image_path = os.path.join(rparis6k_path, 'images', 'paris_sacrecoeur_000279.jpg')  # sacrecoeur 10    # 0.3 - 0.4
 #image_path = os.path.join(rparis6k_path, 'images', 'paris_triomphe_000348.jpg')    # triomphe 11      # 0.4 - 0.5
 
-# Examples usage with personal images
-image_path = os.path.join(download_path, 'eiffel.jpg')
-#image_path = os.path.join(download_path, 'louvre.jpg')
-#image_path = os.path.join(download_path, 'pantheon.jpg')
+# Examples usage with personal images                                               # monument         # confidence
+#image_path = os.path.join(download_path, 'eiffel.jpg')                             # eiffel           # 0.
+#image_path = os.path.join(download_path, 'louvre.jpg')                             # louvre           # 0.
+#image_path = os.path.join(download_path, 'pantheon.jpg')                           # pantheon         # 0.
+#image_path = os.path.join(download_path, 'sacrecoeur.jpg')                         # sacrecoeur       # 0.5
+#image_path = os.path.join(download_path, 'moulinrouge.jpg')                        # moulinrouge      # 0.2
 
 boxes, class_scores = detect_objects(image_path)
 
 # Post-processing
-confidence_threshold = 0.2
+confidence_threshold = 0.2 # 0.5
 max_boxes = 10
 
 # Get the class with highest score for each box
@@ -88,7 +107,7 @@ height, width = original_image.shape[:2]
 # Print results and draw boxes
 for i in top_indices:
     # Convert normalized coordinates to pixel coordinates
-    # FIXME: which format do I have? [xmin, ymin, xmax, ymax] or [xmin, ymin, width, height]?
+    # FIXME: which format do I have in output? [xmin, ymin, xmax, ymax] or [xmin, ymin, width, height]?
 
     '''
     xmin, ymin, xmax, ymax = filtered_boxes[i]

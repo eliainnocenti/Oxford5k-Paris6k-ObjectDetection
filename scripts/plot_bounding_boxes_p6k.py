@@ -1,4 +1,5 @@
 """
+TODO: add file and function descriptions
 This script provides functions to visualize bounding box annotations on images for the Revisited Paris (rparis6k) dataset.
 
 License:

@@ -1,3 +1,7 @@
+"""
+TODO: add file and function descriptions
+"""
+
 import albumentations as A
 import cv2
 import json
@@ -7,6 +11,11 @@ from tqdm import tqdm
 
 
 def get_transform(set='train'):
+    """
+
+    :param set:
+    :return:
+    """
     bboxes_params = A.BboxParams(format='coco', min_visibility=0.3, label_fields=['class_labels']) # TODO: check min_visibility
 
     if set == 'train':
@@ -40,6 +49,13 @@ def get_transform(set='train'):
 
 
 def clip_bbox(bbox, image_width, image_height):
+    """
+
+    :param bbox:
+    :param image_width:
+    :param image_height:
+    :return:
+    """
     x_min, y_min, width, height = bbox
 
     x_min = max(0, min(x_min, image_width - 1)) # TODO: check -1
@@ -51,12 +67,29 @@ def clip_bbox(bbox, image_width, image_height):
 
 
 def validate_bbox(bbox, image_width, image_height):
+    """
+
+    :param bbox:
+    :param image_width:
+    :param image_height:
+    :return:
+    """
     x, y, w, h = bbox
 
     return 0 <= x < image_width and 0 <= y < image_height and x + w <= image_width and y + h <= image_height
 
 
 def apply_augmentation(image_path, bboxes, class_labels, output_path, output_filename, transform):
+    """
+
+    :param image_path:
+    :param bboxes:
+    :param class_labels:
+    :param output_path:
+    :param output_filename:
+    :param transform:
+    :return:
+    """
     # Read the image
     image = cv2.imread(image_path)
     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -77,6 +110,16 @@ def apply_augmentation(image_path, bboxes, class_labels, output_path, output_fil
 
 
 def augment_dataset(input_path, output_path, transform, n_images, n_annotations, num_augmentations=5):
+    """
+
+    :param input_path:
+    :param output_path:
+    :param transform:
+    :param n_images:
+    :param n_annotations:
+    :param num_augmentations:
+    :return:
+    """
     # Load the original COCO JSON file
     with open(os.path.join(input_path, 'labels.json'), 'r') as f:
         coco_data = json.load(f)
@@ -163,7 +206,10 @@ def augment_dataset(input_path, output_path, transform, n_images, n_annotations,
 
 
 def main():
+    """
 
+    :return:
+    """
     train_dataset_path = 'path/to/dataset/train/'
     validation_dataset_path = 'path/to/dataset/validation/'
     test_dataset_path = 'path/to/dataset/test/'

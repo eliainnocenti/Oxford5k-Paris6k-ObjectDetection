@@ -1,4 +1,5 @@
 """
+TODO: add file and function descriptions
 This script creates annotations for the Oxford 5k and Paris 6k datasets in XML or JSON format.
 
 Classes:

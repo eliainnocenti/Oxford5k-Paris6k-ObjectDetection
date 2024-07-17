@@ -1,4 +1,5 @@
 """
+TODO: update file and function descriptions
 This script checks the consistency of image annotations for datasets such as rparis6k, ensuring that
 each image has corresponding objects correctly annotated.
 

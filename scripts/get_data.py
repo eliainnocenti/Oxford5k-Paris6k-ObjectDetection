@@ -1,4 +1,5 @@
 """
+TODO: add file and function descriptions
 This script downloads image datasets required for the Revisited Oxford and Paris retrieval benchmarks.
 
 License:
